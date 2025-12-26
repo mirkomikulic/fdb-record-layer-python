@@ -1,0 +1,24 @@
+services:
+  fdb:
+    image: foundationdb/foundationdb:7.3.43
+    container_name: fdb-test
+    environment:
+      FDB_NETWORKING_MODE: container
+      FDB_COORDINATOR_PORT: 4500
+      FDB_PORT: 4500
+    ports:
+      - "4500:4500"
+    volumes:
+      - fdb-data:/var/fdb/data
+      - fdb-logs:/var/fdb/logs
+      - ./fdb.cluster:/var/fdb/fdb.cluster
+    healthcheck:
+      test: ["CMD", "fdbcli", "--exec", "status"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  fdb-data:
+  fdb-logs:

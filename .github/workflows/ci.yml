@@ -106,6 +106,66 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+    services:
+      fdb:
+        image: foundationdb/foundationdb:7.3.43
+        ports:
+          - 4500:4500
+        options: >-
+          --health-cmd "fdbcli --exec 'status'"
+          --health-interval 5s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+        env:
+          FDB_NETWORKING_MODE: container
+          FDB_COORDINATOR_PORT: 4500
+          FDB_PORT: 4500
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,sql]"
+
+      - name: Create cluster file
+        run: echo "docker:docker@127.0.0.1:4500" > fdb.cluster
+
+      - name: Wait for FDB to be ready
+        run: |
+          MAX_RETRIES=30
+          RETRY_COUNT=0
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if docker exec $(docker ps -q --filter ancestor=foundationdb/foundationdb:7.3.43) fdbcli --exec "status" 2>/dev/null | grep -q "available"; then
+              echo "FoundationDB is ready!"
+              break
+            fi
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Waiting for FDB... ($RETRY_COUNT/$MAX_RETRIES)"
+            sleep 2
+          done
+
+      - name: Configure FDB database
+        run: |
+          docker exec $(docker ps -q --filter ancestor=foundationdb/foundationdb:7.3.43) fdbcli --exec "configure new single memory" || true
+
+      - name: Run integration tests
+        run: |
+          FDB_CLUSTER_FILE=./fdb.cluster pytest tests/integration/ -v --tb=short
+        env:
+          FDB_CLUSTER_FILE: ./fdb.cluster
+
   build:
     name: Build Package
     runs-on: ubuntu-latest

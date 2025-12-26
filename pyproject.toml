@@ -58,6 +58,11 @@ include = ["fdb_record_layer*"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "integration: mark test as integration test requiring FDB",
+]
+# By default, exclude integration tests (they require FDB)
+addopts = "--ignore=tests/integration"
 
 [tool.mypy]
 python_version = "3.10"

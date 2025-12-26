@@ -82,5 +82,6 @@ dmypy.json
 Thumbs.db
 
 # Project specific
+fdb.cluster
 *.fdb.cluster
 logs/
