@@ -24,7 +24,7 @@ classifiers = [
     "Topic :: Database",
 ]
 dependencies = [
-    "foundationdb>=7.1.0",
+    "foundationdb>=7.1.0,<7.4.0",  # Pin to 7.3.x for API 730 compatibility
     "protobuf>=3.20.0",
     "typing-extensions>=4.0.0",
 ]
