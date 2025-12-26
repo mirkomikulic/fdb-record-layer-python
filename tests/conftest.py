@@ -31,7 +31,6 @@ if not _check_fdb_available():
     _mock_fdb.open = MagicMock()
     sys.modules["fdb"] = _mock_fdb
     sys.modules["fdb.subspace_impl"] = MagicMock()
-    print("FDB mocked")
 
 
 @pytest.fixture(scope="session")
