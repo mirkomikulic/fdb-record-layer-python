@@ -1,3 +1,5 @@
+> **⚠️ Disclaimer:** This is an AI-generated reimplementation of the original [Java FoundationDB Record Layer](https://github.com/FoundationDB/fdb-record-layer). It was created using Claude (Anthropic) and has not been officially endorsed by Apple or the FoundationDB team.
+
 # FDB Record Layer for Python
 
 A Python implementation of the [FoundationDB Record Layer](https://github.com/FoundationDB/fdb-record-layer), providing a structured record-oriented store with secondary indexes, query planning, and SQL support on top of FoundationDB.
