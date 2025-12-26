@@ -1,19 +1,24 @@
 """Pytest configuration and shared fixtures."""
 
 import asyncio
+import importlib.util
 import sys
 from collections.abc import Generator
 from unittest.mock import MagicMock
 
 import pytest
 
-# Mock FDB before any imports that might trigger it
-# This allows tests to run without FDB installed
-_mock_fdb = MagicMock()
-_mock_fdb.api_version = MagicMock()
-_mock_fdb.open = MagicMock()
-sys.modules["fdb"] = _mock_fdb
-sys.modules["fdb.subspace_impl"] = MagicMock()
+# Only mock FDB if it's not installed
+# This allows unit tests to run without FDB installed while
+# integration tests use the real FDB when available
+
+if importlib.util.find_spec("fdb") is None:
+    # Mock FDB so unit tests can run without it installed
+    _mock_fdb = MagicMock()
+    _mock_fdb.api_version = MagicMock()
+    _mock_fdb.open = MagicMock()
+    sys.modules["fdb"] = _mock_fdb
+    sys.modules["fdb.subspace_impl"] = MagicMock()
 
 
 @pytest.fixture(scope="session")
