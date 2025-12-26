@@ -176,7 +176,7 @@ jobs:
           docker exec fdb-test fdbcli --exec "status"
 
       - name: Run integration tests
-        run: pytest tests/integration/ -v --tb=short
+        run: pytest tests/integration/ -v -s --tb=short
         env:
           FDB_CLUSTER_FILE: ./fdb.cluster
 

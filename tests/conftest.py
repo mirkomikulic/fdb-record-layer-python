@@ -14,6 +14,8 @@ import pytest
 
 def _check_fdb_available() -> bool:
     """Check if FDB is truly available (package installed AND native library present)."""
+    import traceback
+
     try:
         import fdb
 
@@ -21,12 +23,13 @@ def _check_fdb_available() -> bool:
         fdb.api_version(730)
         return True
     except Exception as e:
-        print(f"FDB not available: {e}")
+        print(f"FDB not available: {type(e).__name__}: {e}", flush=True)
+        traceback.print_exc()
         return False
 
 
 _fdb_available = _check_fdb_available()
-print(f"FDB available: {_fdb_available}")
+print(f"FDB available: {_fdb_available}", flush=True)
 
 if not _fdb_available:
     # Mock FDB so unit tests can run without it installed
