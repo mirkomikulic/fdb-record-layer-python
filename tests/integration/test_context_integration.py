@@ -3,7 +3,6 @@
 import pytest
 
 from fdb_record_layer.core.context import FDBDatabase, FDBRecordContext, RetryConfig
-from fdb_record_layer.core.exceptions import TransactionRetryLimitExceeded
 
 pytestmark = pytest.mark.integration
 

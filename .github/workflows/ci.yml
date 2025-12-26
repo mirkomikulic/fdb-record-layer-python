@@ -110,21 +110,6 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: [test]
-    services:
-      fdb:
-        image: foundationdb/foundationdb:7.3.43
-        ports:
-          - 4500:4500
-        options: >-
-          --health-cmd "fdbcli --exec 'status'"
-          --health-interval 5s
-          --health-timeout 10s
-          --health-retries 10
-          --health-start-period 30s
-        env:
-          FDB_NETWORKING_MODE: container
-          FDB_COORDINATOR_PORT: 4500
-          FDB_PORT: 4500
 
     steps:
       - uses: actions/checkout@v6
@@ -142,13 +127,26 @@ jobs:
       - name: Create cluster file
         run: echo "docker:docker@127.0.0.1:4500" > fdb.cluster
 
-      - name: Wait for FDB to be ready
+      - name: Start FDB container
         run: |
+          docker run -d --name fdb-test \
+            -p 4500:4500 \
+            -e FDB_NETWORKING_MODE=container \
+            -e FDB_COORDINATOR_PORT=4500 \
+            -e FDB_PORT=4500 \
+            -v $(pwd)/fdb.cluster:/var/fdb/fdb.cluster \
+            foundationdb/foundationdb:7.3.43
+
+      - name: Wait for FDB and configure
+        run: |
+          echo "Waiting for FDB to start..."
+          sleep 10
+
           MAX_RETRIES=30
           RETRY_COUNT=0
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if docker exec $(docker ps -q --filter ancestor=foundationdb/foundationdb:7.3.43) fdbcli --exec "status" 2>/dev/null | grep -q "available"; then
-              echo "FoundationDB is ready!"
+            if docker exec fdb-test fdbcli --exec "status" 2>/dev/null; then
+              echo "FDB is responding!"
               break
             fi
             RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -156,15 +154,21 @@ jobs:
             sleep 2
           done
 
-      - name: Configure FDB database
-        run: |
-          docker exec $(docker ps -q --filter ancestor=foundationdb/foundationdb:7.3.43) fdbcli --exec "configure new single memory" || true
+          echo "Configuring database..."
+          docker exec fdb-test fdbcli --exec "configure new single memory" || true
+
+          echo "Waiting for database to be ready..."
+          sleep 5
+          docker exec fdb-test fdbcli --exec "status"
 
       - name: Run integration tests
-        run: |
-          FDB_CLUSTER_FILE=./fdb.cluster pytest tests/integration/ -v --tb=short
+        run: pytest tests/integration/ -v --tb=short
         env:
           FDB_CLUSTER_FILE: ./fdb.cluster
+
+      - name: Stop FDB container
+        if: always()
+        run: docker stop fdb-test && docker rm fdb-test || true
 
   build:
     name: Build Package

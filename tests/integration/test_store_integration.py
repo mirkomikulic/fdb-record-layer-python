@@ -4,9 +4,9 @@ import pytest
 
 from fdb_record_layer.core.context import FDBDatabase, FDBRecordContext
 from fdb_record_layer.core.store import FDBRecordStore
-from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
 from fdb_record_layer.expressions.field import FieldKeyExpression
 from fdb_record_layer.metadata.index import Index, IndexType
+from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
 
 pytestmark = pytest.mark.integration
 
@@ -34,7 +34,7 @@ class MockPersonRecord:
         self.age = age
         self.email = email
 
-    def SerializeToString(self) -> bytes:
+    def SerializeToString(self) -> bytes:  # noqa: N802
         """Serialize to bytes (mock protobuf)."""
         import json
 
@@ -43,7 +43,7 @@ class MockPersonRecord:
         ).encode()
 
     @classmethod
-    def FromString(cls, data: bytes) -> "MockPersonRecord":
+    def FromString(cls, data: bytes) -> "MockPersonRecord":  # noqa: N802
         """Deserialize from bytes (mock protobuf)."""
         import json
 

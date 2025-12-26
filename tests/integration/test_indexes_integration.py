@@ -4,10 +4,9 @@ import pytest
 
 from fdb_record_layer.core.context import FDBRecordContext
 from fdb_record_layer.core.store import FDBRecordStore
-from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
 from fdb_record_layer.expressions.field import FieldKeyExpression
-from fdb_record_layer.metadata.index import Index, IndexType, IndexState
-from fdb_record_layer.indexes.maintainer import IndexScanRange
+from fdb_record_layer.metadata.index import Index, IndexState, IndexType
+from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
 
 pytestmark = pytest.mark.integration
 
@@ -35,7 +34,7 @@ class MockRecord:
         self.score = score
         self.category = category
 
-    def SerializeToString(self) -> bytes:
+    def SerializeToString(self) -> bytes:  # noqa: N802
         import json
 
         return json.dumps({
@@ -46,7 +45,7 @@ class MockRecord:
         }).encode()
 
     @classmethod
-    def FromString(cls, data: bytes) -> "MockRecord":
+    def FromString(cls, data: bytes) -> "MockRecord":  # noqa: N802
         import json
 
         d = json.loads(data.decode())
