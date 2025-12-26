@@ -63,12 +63,10 @@ def test_subspace(fdb_database):
     yield subspace
 
     # Cleanup: clear all data in this subspace
-    @fdb_database.transact
-    def cleanup(tr):
-        r = subspace.range()
-        tr.clear_range(r.start, r.stop)
-
-    cleanup()
+    tr = fdb_database.create_transaction()
+    r = subspace.range()
+    tr.clear_range(r.start, r.stop)
+    tr.commit().wait()
 
 
 @pytest.fixture(scope="function")
