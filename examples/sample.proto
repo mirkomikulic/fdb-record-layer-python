@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package sample;
+
+// A simple person record
+message Person {
+    int64 id = 1;
+    string name = 2;
+    string email = 3;
+    int32 age = 4;
+    string city = 5;
+    repeated string tags = 6;
+    Address address = 7;
+}
+
+// Address nested message
+message Address {
+    string street = 1;
+    string city = 2;
+    string country = 3;
+    string postal_code = 4;
+}
+
+// A simple order record
+message Order {
+    int64 id = 1;
+    int64 customer_id = 2;
+    string status = 3;
+    double total = 4;
+    int64 created_at = 5;
+}
+
+// Union message containing all record types
+message RecordUnion {
+    oneof record {
+        Person person = 1;
+        Order order = 2;
+    }
+}

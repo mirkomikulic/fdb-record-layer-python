@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fdb-record-layer"
+version = "0.1.0-beta.1"
+description = "Python implementation of FoundationDB Record Layer"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+authors = [
+    {name = "FDB Record Layer Python Contributors"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+]
+dependencies = [
+    "foundationdb>=7.1.0",
+    "protobuf>=3.20.0",
+    "typing-extensions>=4.0.0",
+]
+
+[project.optional-dependencies]
+sql = [
+    "lark>=1.0.0",
+]
+grpc = [
+    "grpcio>=1.50.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+all = [
+    "fdb-record-layer[sql,grpc,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/foundationdb/fdb-record-layer-python"
+Documentation = "https://foundationdb.github.io/fdb-record-layer-python"
+Repository = "https://github.com/foundationdb/fdb-record-layer-python"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["fdb_record_layer*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.10"
+# Strict mode disabled for initial release - gradual typing improvements planned
+strict = false
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["fdb", "fdb.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["lark", "lark.*"]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+exclude = [
+    "examples/*_pb2.py",
+    "examples/*_pb2_grpc.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"fdb_record_layer/__init__.py" = ["E402"]
+"fdb_record_layer/core/exceptions.py" = ["N818"]
+"examples/*.py" = ["E402", "F401", "F541"]

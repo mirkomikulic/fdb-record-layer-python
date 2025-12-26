@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      development:
+        patterns:
+          - "pytest*"
+          - "mypy*"
+          - "ruff*"
+      production:
+        patterns:
+          - "protobuf*"
+          - "foundationdb*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
