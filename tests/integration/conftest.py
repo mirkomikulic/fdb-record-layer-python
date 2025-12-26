@@ -52,33 +52,11 @@ def fdb_database(fdb_cluster_file):
 @pytest.fixture(scope="function")
 def test_subspace(fdb_database):
     """Create a unique subspace for each test to avoid conflicts."""
-    import fdb.tuple
+    from fdb.subspace_impl import Subspace
 
     # Generate unique prefix for this test
     test_id = uuid.uuid4().hex[:8]
     prefix = ("test", test_id)
-
-    class Subspace:
-        def __init__(self, prefix_tuple):
-            self._prefix = prefix_tuple
-
-        def key(self, *args):
-            return fdb.tuple.pack(self._prefix + args)
-
-        def pack(self, t):
-            if isinstance(t, tuple):
-                return fdb.tuple.pack(self._prefix + t)
-            return fdb.tuple.pack(self._prefix + (t,))
-
-        def unpack(self, key):
-            full = fdb.tuple.unpack(key)
-            return full[len(self._prefix) :]
-
-        def range(self):
-            return fdb.tuple.range(self._prefix)
-
-        def __getitem__(self, name):
-            return Subspace(self._prefix + (name,))
 
     subspace = Subspace(prefix)
 

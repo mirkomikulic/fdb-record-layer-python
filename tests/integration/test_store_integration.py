@@ -369,7 +369,9 @@ class TestDatabaseRun:
     """Test FDBDatabase.run() with automatic retry."""
 
     @pytest.mark.asyncio
-    async def test_run_with_commit(self, fdb_cluster_file, test_subspace, mock_metadata, mock_serializer):
+    async def test_run_with_commit(
+        self, fdb_cluster_file, test_subspace, mock_metadata, mock_serializer
+    ):
         """Test running a transactional function with auto-commit."""
         db = FDBDatabase(fdb_cluster_file)
 
