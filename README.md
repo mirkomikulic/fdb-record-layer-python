@@ -186,14 +186,14 @@ lifecycle = init_lifecycle()
 
 ## Documentation
 
-- [API Reference](https://foundationdb.github.io/fdb-record-layer-python)
+- [API Reference](https://github.com/mirkomikulic/fdb-record-layer-python#readme)
 - [Java Record Layer Docs](https://foundationdb.github.io/fdb-record-layer/) (conceptual reference)
 
 ## Development
 
 ```bash
 # Clone and install
-git clone https://github.com/foundationdb/fdb-record-layer-python
+git clone https://github.com/mirkomikulic/fdb-record-layer-python
 cd fdb-record-layer-python
 pip install -e .[dev]
 

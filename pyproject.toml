@@ -47,9 +47,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/foundationdb/fdb-record-layer-python"
-Documentation = "https://foundationdb.github.io/fdb-record-layer-python"
-Repository = "https://github.com/foundationdb/fdb-record-layer-python"
+Homepage = "https://github.com/mirkomikulic/fdb-record-layer-python"
+Documentation = "https://github.com/mirkomikulic/fdb-record-layer-python#readme"
+Repository = "https://github.com/mirkomikulic/fdb-record-layer-python"
 
 [tool.setuptools.packages.find]
 where = ["."]
