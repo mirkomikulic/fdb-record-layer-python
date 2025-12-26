@@ -1,18 +1,30 @@
 """Pytest configuration and shared fixtures."""
 
 import asyncio
-import importlib.util
 import sys
 from collections.abc import Generator
 from unittest.mock import MagicMock
 
 import pytest
 
-# Only mock FDB if it's not installed
-# This allows unit tests to run without FDB installed while
+# Only mock FDB if it's not available (either not installed or missing native library)
+# This allows unit tests to run without FDB client while
 # integration tests use the real FDB when available
 
-if importlib.util.find_spec("fdb") is None:
+
+def _check_fdb_available() -> bool:
+    """Check if FDB is truly available (package installed AND native library present)."""
+    try:
+        import fdb
+
+        # This will raise if the native library is missing
+        fdb.api_version(730)
+        return True
+    except Exception:
+        return False
+
+
+if not _check_fdb_available():
     # Mock FDB so unit tests can run without it installed
     _mock_fdb = MagicMock()
     _mock_fdb.api_version = MagicMock()
