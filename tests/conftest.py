@@ -20,17 +20,22 @@ def _check_fdb_available() -> bool:
         # This will raise if the native library is missing
         fdb.api_version(730)
         return True
-    except Exception:
+    except Exception as e:
+        print(f"FDB not available: {e}")
         return False
 
 
-if not _check_fdb_available():
+_fdb_available = _check_fdb_available()
+print(f"FDB available: {_fdb_available}")
+
+if not _fdb_available:
     # Mock FDB so unit tests can run without it installed
     _mock_fdb = MagicMock()
     _mock_fdb.api_version = MagicMock()
     _mock_fdb.open = MagicMock()
     sys.modules["fdb"] = _mock_fdb
     sys.modules["fdb.subspace_impl"] = MagicMock()
+    print("FDB mocked")
 
 
 @pytest.fixture(scope="session")
