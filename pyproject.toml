@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fdb-record-layer"
-version = "0.1.0-beta.1"
+version = "0.1.0-beta.2"
 description = "Python implementation of FoundationDB Record Layer"
 readme = "README.md"
 license = {text = "Apache-2.0"}
