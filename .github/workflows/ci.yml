@@ -123,6 +123,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev,sql]"
+          pip install grpcio-tools
+
+      - name: Compile test protobufs
+        run: |
+          python -m grpc_tools.protoc \
+            --python_out=tests/integration \
+            --proto_path=tests/integration \
+            tests/integration/test_records.proto
 
       - name: Create cluster file
         run: echo "docker:docker@127.0.0.1:4500" > fdb.cluster

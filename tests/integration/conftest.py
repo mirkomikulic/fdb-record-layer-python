@@ -79,53 +79,101 @@ def fdb_transaction(fdb_database):
     tr.cancel()
 
 
-@pytest.fixture
-def sample_proto_descriptor():
-    """Create a sample protobuf descriptor for testing."""
-    from unittest.mock import MagicMock
+@pytest.fixture(scope="session")
+def proto_descriptor():
+    """Get the test protobuf file descriptor."""
+    from tests.integration.test_records_pb2 import DESCRIPTOR
 
-    # Create a mock file descriptor
-    file_desc = MagicMock()
-    file_desc.message_types_by_name = {}
+    return DESCRIPTOR
 
-    # Create a Person message type
-    person_desc = MagicMock()
-    person_desc.name = "Person"
-    person_desc.full_name = "test.Person"
 
-    # Create fields
-    id_field = MagicMock()
-    id_field.name = "id"
-    id_field.number = 1
-    id_field.type = 3  # INT64
-    id_field.label = 1  # OPTIONAL
+@pytest.fixture(scope="session")
+def person_class():
+    """Get the Person protobuf class."""
+    from tests.integration.test_records_pb2 import Person
 
-    name_field = MagicMock()
-    name_field.name = "name"
-    name_field.number = 2
-    name_field.type = 9  # STRING
-    name_field.label = 1
+    return Person
 
-    age_field = MagicMock()
-    age_field.name = "age"
-    age_field.number = 3
-    age_field.type = 5  # INT32
-    age_field.label = 1
 
-    email_field = MagicMock()
-    email_field.name = "email"
-    email_field.number = 4
-    email_field.type = 9  # STRING
-    email_field.label = 1
+@pytest.fixture(scope="session")
+def product_class():
+    """Get the Product protobuf class."""
+    from tests.integration.test_records_pb2 import Product
 
-    person_desc.fields = [id_field, name_field, age_field, email_field]
-    person_desc.fields_by_name = {
-        "id": id_field,
-        "name": name_field,
-        "age": age_field,
-        "email": email_field,
-    }
+    return Product
 
-    file_desc.message_types_by_name["Person"] = person_desc
 
-    return file_desc
+@pytest.fixture(scope="function")
+def record_metadata(proto_descriptor):
+    """Create RecordMetaData for testing."""
+    from fdb_record_layer.expressions.field import FieldKeyExpression
+    from fdb_record_layer.metadata.index import Index, IndexType
+    from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
+
+    # Create Person record type with primary key on 'id'
+    person_type = RecordType(
+        name="Person",
+        descriptor=proto_descriptor.message_types_by_name["Person"],
+        primary_key=FieldKeyExpression("id"),
+    )
+
+    # Create Product record type with primary key on 'id'
+    product_type = RecordType(
+        name="Product",
+        descriptor=proto_descriptor.message_types_by_name["Product"],
+        primary_key=FieldKeyExpression("id"),
+    )
+
+    # Create indexes
+    person_name_index = Index(
+        name="Person$name",
+        root_expression=FieldKeyExpression("name"),
+        index_type=IndexType.VALUE,
+        record_types=["Person"],
+    )
+
+    person_age_index = Index(
+        name="Person$age",
+        root_expression=FieldKeyExpression("age"),
+        index_type=IndexType.VALUE,
+        record_types=["Person"],
+    )
+
+    person_city_index = Index(
+        name="Person$city",
+        root_expression=FieldKeyExpression("city"),
+        index_type=IndexType.VALUE,
+        record_types=["Person"],
+    )
+
+    product_name_index = Index(
+        name="Product$name",
+        root_expression=FieldKeyExpression("name"),
+        index_type=IndexType.VALUE,
+        record_types=["Product"],
+    )
+
+    product_category_index = Index(
+        name="Product$category",
+        root_expression=FieldKeyExpression("category"),
+        index_type=IndexType.VALUE,
+        record_types=["Product"],
+    )
+
+    # Create metadata
+    metadata = RecordMetaData(
+        record_types={
+            "Person": person_type,
+            "Product": product_type,
+        },
+        indexes={
+            "Person$name": person_name_index,
+            "Person$age": person_age_index,
+            "Person$city": person_city_index,
+            "Product$name": product_name_index,
+            "Product$category": product_category_index,
+        },
+        file_descriptor=proto_descriptor,
+    )
+
+    return metadata

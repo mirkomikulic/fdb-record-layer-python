@@ -320,9 +320,7 @@ class TestConcurrentOperations:
             finally:
                 ctx.close()
 
-        results = await asyncio.gather(*[
-            read_key(fdb_database, i) for i in range(5)
-        ])
+        results = await asyncio.gather(*[read_key(fdb_database, i) for i in range(5)])
 
         for i, result in enumerate(results):
             assert result == f"value_{i}".encode()

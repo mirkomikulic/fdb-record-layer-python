@@ -4,117 +4,9 @@ import pytest
 
 from fdb_record_layer.core.context import FDBRecordContext
 from fdb_record_layer.core.store import FDBRecordStore
-from fdb_record_layer.expressions.field import FieldKeyExpression
-from fdb_record_layer.metadata.index import Index, IndexState, IndexType
-from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
+from fdb_record_layer.metadata.index import IndexState
 
 pytestmark = pytest.mark.integration
-
-
-class MockRecord:
-    """Mock record for testing."""
-
-    class _Descriptor:
-        name = "TestRecord"
-
-        @property
-        def fields_by_name(self):
-            return {
-                "id": type("Field", (), {"name": "id"})(),
-                "name": type("Field", (), {"name": "name"})(),
-                "score": type("Field", (), {"name": "score"})(),
-                "category": type("Field", (), {"name": "category"})(),
-            }
-
-    DESCRIPTOR = _Descriptor()
-
-    def __init__(self, id: int, name: str, score: int = 0, category: str = ""):
-        self.id = id
-        self.name = name
-        self.score = score
-        self.category = category
-
-    def SerializeToString(self) -> bytes:  # noqa: N802
-        import json
-
-        return json.dumps({
-            "id": self.id,
-            "name": self.name,
-            "score": self.score,
-            "category": self.category,
-        }).encode()
-
-    @classmethod
-    def FromString(cls, data: bytes) -> "MockRecord":  # noqa: N802
-        import json
-
-        d = json.loads(data.decode())
-        return cls(
-            id=d["id"],
-            name=d["name"],
-            score=d.get("score", 0),
-            category=d.get("category", ""),
-        )
-
-
-class MockSerializer:
-    """Mock serializer for testing."""
-
-    def serialize(self, record) -> bytes:
-        return record.SerializeToString()
-
-    def deserialize(self, data: bytes, descriptor) -> MockRecord:
-        return MockRecord.FromString(data)
-
-
-def create_test_metadata() -> RecordMetaData:
-    """Create test metadata with indexes."""
-    primary_key = FieldKeyExpression("id")
-
-    record_type = RecordType(
-        name="TestRecord",
-        descriptor=MockRecord.DESCRIPTOR,
-        primary_key=primary_key,
-    )
-
-    # VALUE index on name
-    name_index = Index(
-        name="TestRecord$name",
-        root_expression=FieldKeyExpression("name"),
-        index_type=IndexType.VALUE,
-    )
-
-    # VALUE index on score
-    score_index = Index(
-        name="TestRecord$score",
-        root_expression=FieldKeyExpression("score"),
-        index_type=IndexType.VALUE,
-    )
-
-    # VALUE index on category
-    category_index = Index(
-        name="TestRecord$category",
-        root_expression=FieldKeyExpression("category"),
-        index_type=IndexType.VALUE,
-    )
-
-    metadata = RecordMetaData()
-    metadata.add_record_type(record_type)
-    metadata.add_index("TestRecord", name_index)
-    metadata.add_index("TestRecord", score_index)
-    metadata.add_index("TestRecord", category_index)
-
-    return metadata
-
-
-@pytest.fixture
-def test_metadata():
-    return create_test_metadata()
-
-
-@pytest.fixture
-def test_serializer():
-    return MockSerializer()
 
 
 class TestIndexMaintenance:
@@ -122,27 +14,23 @@ class TestIndexMaintenance:
 
     @pytest.mark.asyncio
     async def test_index_created_on_save(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
+        self, fdb_database, test_subspace, record_metadata, person_class
     ):
         """Test that index entries are created when saving records."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
             # Save a record
-            record = MockRecord(id=1, name="Alpha", score=100, category="A")
-            await store.save_record(record)
+            person = person_class(id=1, name="Alpha", age=30, city="NYC")
+            await store.save_record(person)
 
-            # The index entry should exist (we check by scanning)
-            index_state = store.get_index_state("TestRecord$name")
+            # The index entry should exist (we check by state)
+            index_state = store.get_index_state("Person$name")
             assert index_state == IndexState.READABLE
 
             await ctx.commit()
@@ -152,31 +40,27 @@ class TestIndexMaintenance:
 
     @pytest.mark.asyncio
     async def test_index_updated_on_update(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
+        self, fdb_database, test_subspace, record_metadata, person_class
     ):
         """Test that index entries are updated when updating records."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
             # Save initial record
-            record = MockRecord(id=2, name="Beta", score=50)
-            await store.save_record(record)
+            person = person_class(id=2, name="Beta", age=25)
+            await store.save_record(person)
 
             # Update the record with new name
-            updated = MockRecord(id=2, name="Gamma", score=50)
+            updated = person_class(id=2, name="Gamma", age=25)
             await store.save_record(updated)
 
             # Load and verify
-            loaded = await store.load_record("TestRecord", (2,))
+            loaded = await store.load_record("Person", (2,))
             assert loaded is not None
             assert loaded.record.name == "Gamma"
 
@@ -187,31 +71,27 @@ class TestIndexMaintenance:
 
     @pytest.mark.asyncio
     async def test_index_removed_on_delete(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
+        self, fdb_database, test_subspace, record_metadata, person_class
     ):
         """Test that index entries are removed when deleting records."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
             # Save a record
-            record = MockRecord(id=3, name="Delta", score=75)
-            await store.save_record(record)
+            person = person_class(id=3, name="Delta", age=35)
+            await store.save_record(person)
 
             # Delete the record
-            deleted = await store.delete_record("TestRecord", (3,))
+            deleted = await store.delete_record("Person", (3,))
             assert deleted is True
 
             # Verify record is gone
-            loaded = await store.load_record("TestRecord", (3,))
+            loaded = await store.load_record("Person", (3,))
             assert loaded is None
 
             await ctx.commit()
@@ -224,53 +104,41 @@ class TestIndexState:
     """Test index state management."""
 
     @pytest.mark.asyncio
-    async def test_default_index_state(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
-    ):
+    async def test_default_index_state(self, fdb_database, test_subspace, record_metadata):
         """Test that default index state is READABLE."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
-            state = store.get_index_state("TestRecord$name")
+            state = store.get_index_state("Person$name")
             assert state == IndexState.READABLE
 
         finally:
             ctx.close()
 
     @pytest.mark.asyncio
-    async def test_set_index_state(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
-    ):
+    async def test_set_index_state(self, fdb_database, test_subspace, record_metadata):
         """Test setting index state."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
             # Set to WRITE_ONLY
-            store.set_index_state("TestRecord$name", IndexState.WRITE_ONLY)
-            state = store.get_index_state("TestRecord$name")
+            store.set_index_state("Person$name", IndexState.WRITE_ONLY)
+            state = store.get_index_state("Person$name")
             assert state == IndexState.WRITE_ONLY
 
             # Set back to READABLE
-            store.set_index_state("TestRecord$name", IndexState.READABLE)
-            state = store.get_index_state("TestRecord$name")
+            store.set_index_state("Person$name", IndexState.READABLE)
+            state = store.get_index_state("Person$name")
             assert state == IndexState.READABLE
 
             await ctx.commit()
@@ -280,32 +148,28 @@ class TestIndexState:
 
     @pytest.mark.asyncio
     async def test_disabled_index_not_updated(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
+        self, fdb_database, test_subspace, record_metadata, person_class
     ):
         """Test that disabled indexes are not updated on save."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
             # Disable one index
-            store.set_index_state("TestRecord$score", IndexState.DISABLED)
+            store.set_index_state("Person$age", IndexState.DISABLED)
 
             # Save a record - should still work
-            record = MockRecord(id=10, name="Test", score=999)
-            await store.save_record(record)
+            person = person_class(id=10, name="Test", age=99)
+            await store.save_record(person)
 
             # Verify record saved
-            loaded = await store.load_record("TestRecord", (10,))
+            loaded = await store.load_record("Person", (10,))
             assert loaded is not None
-            assert loaded.record.score == 999
+            assert loaded.record.age == 99
 
             await ctx.commit()
 
@@ -318,31 +182,27 @@ class TestMultipleRecords:
 
     @pytest.mark.asyncio
     async def test_multiple_records_same_index_value(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
+        self, fdb_database, test_subspace, record_metadata, person_class
     ):
         """Test multiple records with same indexed value."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
-            # Save multiple records with same category
+            # Save multiple records with same city
             for i in range(20, 25):
-                record = MockRecord(id=i, name=f"Record{i}", category="shared")
-                await store.save_record(record)
+                person = person_class(id=i, name=f"Person{i}", city="SharedCity")
+                await store.save_record(person)
 
             # All should be loadable
             for i in range(20, 25):
-                loaded = await store.load_record("TestRecord", (i,))
+                loaded = await store.load_record("Person", (i,))
                 assert loaded is not None
-                assert loaded.record.category == "shared"
+                assert loaded.record.city == "SharedCity"
 
             await ctx.commit()
 
@@ -351,33 +211,100 @@ class TestMultipleRecords:
 
     @pytest.mark.asyncio
     async def test_update_indexed_value(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
+        self, fdb_database, test_subspace, record_metadata, person_class
     ):
         """Test updating an indexed value."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
             # Save initial record
-            record = MockRecord(id=30, name="Original", score=100)
-            await store.save_record(record)
+            person = person_class(id=30, name="Original", age=25)
+            await store.save_record(person)
 
             # Update with new indexed value
-            updated = MockRecord(id=30, name="Updated", score=200)
+            updated = person_class(id=30, name="Updated", age=35)
             await store.save_record(updated)
 
             # Verify update
-            loaded = await store.load_record("TestRecord", (30,))
+            loaded = await store.load_record("Person", (30,))
             assert loaded.record.name == "Updated"
-            assert loaded.record.score == 200
+            assert loaded.record.age == 35
+
+            await ctx.commit()
+
+        finally:
+            ctx.close()
+
+
+class TestMultipleIndexes:
+    """Test behavior with multiple indexes."""
+
+    @pytest.mark.asyncio
+    async def test_all_indexes_updated(
+        self, fdb_database, test_subspace, record_metadata, person_class
+    ):
+        """Test that all indexes are updated on save."""
+        ctx = FDBRecordContext(database=fdb_database)
+        try:
+            store = FDBRecordStore(
+                context=ctx,
+                subspace=test_subspace,
+                meta_data=record_metadata,
+            )
+
+            # Save a record with all indexed fields
+            person = person_class(id=40, name="MultiIndex", age=40, city="Boston")
+            await store.save_record(person)
+
+            # All indexes should be in READABLE state
+            assert store.get_index_state("Person$name") == IndexState.READABLE
+            assert store.get_index_state("Person$age") == IndexState.READABLE
+            assert store.get_index_state("Person$city") == IndexState.READABLE
+
+            # Load and verify
+            loaded = await store.load_record("Person", (40,))
+            assert loaded is not None
+            assert loaded.record.name == "MultiIndex"
+            assert loaded.record.age == 40
+            assert loaded.record.city == "Boston"
+
+            await ctx.commit()
+
+        finally:
+            ctx.close()
+
+    @pytest.mark.asyncio
+    async def test_product_indexes(
+        self, fdb_database, test_subspace, record_metadata, product_class
+    ):
+        """Test indexes on Product record type."""
+        ctx = FDBRecordContext(database=fdb_database)
+        try:
+            store = FDBRecordStore(
+                context=ctx,
+                subspace=test_subspace,
+                meta_data=record_metadata,
+            )
+
+            # Save a product
+            product = product_class(id=1, name="Widget", price=19.99, category="Electronics")
+            await store.save_record(product)
+
+            # Check index states
+            assert store.get_index_state("Product$name") == IndexState.READABLE
+            assert store.get_index_state("Product$category") == IndexState.READABLE
+
+            # Load and verify
+            loaded = await store.load_record("Product", (1,))
+            assert loaded is not None
+            assert loaded.record.name == "Widget"
+            assert loaded.record.price == 19.99
+            assert loaded.record.category == "Electronics"
 
             await ctx.commit()
 
@@ -389,34 +316,42 @@ class TestIndexConsistency:
     """Test index consistency across operations."""
 
     @pytest.mark.asyncio
-    async def test_batch_save_updates_indexes(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
+    async def test_batch_operations_update_indexes(
+        self, fdb_database, test_subspace, record_metadata, person_class
     ):
-        """Test that batch save properly updates all indexes."""
+        """Test that batch operations properly update indexes."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
             # Batch save
-            records = [
-                MockRecord(id=i, name=f"Batch{i}", score=i * 10, category="batch")
-                for i in range(40, 50)
-            ]
-            await store.save_records(records)
+            for i in range(50, 60):
+                person = person_class(id=i, name=f"Batch{i}", age=20 + i)
+                await store.save_record(person)
 
             # Verify all saved
-            for i in range(40, 50):
-                loaded = await store.load_record("TestRecord", (i,))
+            for i in range(50, 60):
+                loaded = await store.load_record("Person", (i,))
                 assert loaded is not None
                 assert loaded.record.name == f"Batch{i}"
+
+            # Batch delete
+            for i in range(50, 55):
+                deleted = await store.delete_record("Person", (i,))
+                assert deleted is True
+
+            # Verify half deleted, half remain
+            for i in range(50, 55):
+                loaded = await store.load_record("Person", (i,))
+                assert loaded is None
+
+            for i in range(55, 60):
+                loaded = await store.load_record("Person", (i,))
+                assert loaded is not None
 
             await ctx.commit()
 
@@ -424,36 +359,28 @@ class TestIndexConsistency:
             ctx.close()
 
     @pytest.mark.asyncio
-    async def test_batch_delete_updates_indexes(
-        self, fdb_database, test_subspace, test_metadata, test_serializer
+    async def test_rapid_update_same_record(
+        self, fdb_database, test_subspace, record_metadata, person_class
     ):
-        """Test that batch delete properly cleans up indexes."""
+        """Test rapid updates to the same record."""
         ctx = FDBRecordContext(database=fdb_database)
         try:
-            from fdb.subspace_impl import Subspace
-
-            subspace = Subspace((test_subspace._prefix,))
             store = FDBRecordStore(
                 context=ctx,
-                subspace=subspace,
-                meta_data=test_metadata,
-                serializer=test_serializer,
+                subspace=test_subspace,
+                meta_data=record_metadata,
             )
 
-            # Save records
-            for i in range(50, 55):
-                record = MockRecord(id=i, name=f"ToDelete{i}", score=i)
-                await store.save_record(record)
+            # Rapid updates
+            for i in range(10):
+                person = person_class(id=99, name=f"Version{i}", age=i)
+                await store.save_record(person)
 
-            # Batch delete
-            keys = [(i,) for i in range(50, 55)]
-            deleted = await store.delete_records("TestRecord", keys)
-            assert deleted == 5
-
-            # Verify all deleted
-            for i in range(50, 55):
-                loaded = await store.load_record("TestRecord", (i,))
-                assert loaded is None
+            # Should have final version
+            loaded = await store.load_record("Person", (99,))
+            assert loaded is not None
+            assert loaded.record.name == "Version9"
+            assert loaded.record.age == 9
 
             await ctx.commit()
 
