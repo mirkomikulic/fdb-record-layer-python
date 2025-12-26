@@ -27,11 +27,13 @@ class ASTNode(ABC):
 
 class Statement(ASTNode):
     """Base class for SQL statements."""
+
     pass
 
 
 class Expression(ASTNode):
     """Base class for SQL expressions."""
+
     pass
 
 

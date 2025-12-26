@@ -154,9 +154,7 @@ class RecordMetaData:
 
         # Validate each record type
         for record_type in self.record_types.values():
-            errors.extend(
-                [f"{record_type.name}: {e}" for e in record_type.validate_primary_key()]
-            )
+            errors.extend([f"{record_type.name}: {e}" for e in record_type.validate_primary_key()])
 
         # Validate each index
         for index in self.indexes.values():

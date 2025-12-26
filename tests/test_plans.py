@@ -1,10 +1,10 @@
 """Tests for query execution plans."""
 
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 # Ensure FDB is mocked before imports
-from tests.conftest import _mock_fdb
 
 
 class MockStoredRecord:
@@ -41,7 +41,9 @@ class MockSubspace:
         return MockSubspace(self._prefix + (key,))
 
     def pack(self, key):
-        return str(self._prefix + (key,)).encode() if isinstance(key, tuple) else str(self._prefix + ((key,),)).encode()
+        if isinstance(key, tuple):
+            return str(self._prefix + (key,)).encode()
+        return str(self._prefix + ((key,),)).encode()
 
     def unpack(self, key):
         return (1,)  # Simplified for testing
@@ -275,8 +277,8 @@ class TestFilterPlan:
 
     def test_initialization(self):
         """Test FilterPlan initialization."""
-        from fdb_record_layer.plans.filter_plan import FilterPlan
         from fdb_record_layer.plans.base import EmptyPlan
+        from fdb_record_layer.plans.filter_plan import FilterPlan
 
         child = EmptyPlan()
         filter_component = MagicMock()
@@ -297,8 +299,8 @@ class TestFilterPlan:
 
     def test_explain(self):
         """Test FilterPlan explanation."""
-        from fdb_record_layer.plans.filter_plan import FilterPlan
         from fdb_record_layer.plans.base import EmptyPlan
+        from fdb_record_layer.plans.filter_plan import FilterPlan
 
         child = EmptyPlan()
         plan = FilterPlan(child=child, filter_component=MagicMock())
@@ -309,9 +311,8 @@ class TestFilterPlan:
     @pytest.mark.asyncio
     async def test_execute_filters_records(self):
         """Test FilterPlan filters records based on predicate."""
-        from fdb_record_layer.plans.filter_plan import FilterPlan
-        from fdb_record_layer.plans.base import EmptyPlan
         from fdb_record_layer.cursors.base import ListCursor
+        from fdb_record_layer.plans.filter_plan import FilterPlan
 
         # Create a child plan that returns records
         records = [
@@ -328,8 +329,9 @@ class TestFilterPlan:
         child.get_used_indexes = MagicMock(return_value=set())
 
         # Filter for age > 22
+        # The evaluate receives the record (not stored record), so check r.age directly
         filter_component = MagicMock()
-        filter_component.evaluate = lambda r: r.record.age > 22
+        filter_component.evaluate = lambda r, bindings=None: r.age > 22
 
         plan = FilterPlan(child=child, filter_component=filter_component)
         context = MockContext()
@@ -416,8 +418,8 @@ class TestUnionPlan:
 
     def test_initialization(self):
         """Test UnionPlan initialization."""
-        from fdb_record_layer.plans.union_plan import UnionPlan
         from fdb_record_layer.plans.base import EmptyPlan
+        from fdb_record_layer.plans.union_plan import UnionPlan
 
         child1 = EmptyPlan()
         child2 = EmptyPlan()
@@ -428,9 +430,9 @@ class TestUnionPlan:
 
     def test_has_full_scan_any_child(self):
         """Test UnionPlan has_full_scan if any child does."""
-        from fdb_record_layer.plans.union_plan import UnionPlan
         from fdb_record_layer.plans.base import EmptyPlan
         from fdb_record_layer.plans.scan_plan import ScanPlan
+        from fdb_record_layer.plans.union_plan import UnionPlan
 
         child1 = EmptyPlan()
         child2 = ScanPlan(record_types=["Person"])
@@ -441,8 +443,8 @@ class TestUnionPlan:
 
     def test_get_used_indexes_combines(self):
         """Test UnionPlan combines indexes from all children."""
-        from fdb_record_layer.plans.union_plan import UnionPlan
         from fdb_record_layer.plans.index_plan import IndexScanPlan
+        from fdb_record_layer.plans.union_plan import UnionPlan
 
         child1 = IndexScanPlan(index_name="idx1", scan_comparisons=MagicMock())
         child2 = IndexScanPlan(index_name="idx2", scan_comparisons=MagicMock())
@@ -455,8 +457,8 @@ class TestUnionPlan:
 
     def test_explain(self):
         """Test UnionPlan explanation."""
-        from fdb_record_layer.plans.union_plan import UnionPlan
         from fdb_record_layer.plans.base import EmptyPlan
+        from fdb_record_layer.plans.union_plan import UnionPlan
 
         plan = UnionPlan(children=[EmptyPlan(), EmptyPlan()])
 
@@ -466,8 +468,8 @@ class TestUnionPlan:
     @pytest.mark.asyncio
     async def test_execute_combines_results(self):
         """Test UnionPlan combines results from children."""
-        from fdb_record_layer.plans.union_plan import UnionPlan
         from fdb_record_layer.cursors.base import ListCursor
+        from fdb_record_layer.plans.union_plan import UnionPlan
 
         records1 = [MockStoredRecord((1,), MockRecord(name="Alice"))]
         records2 = [MockStoredRecord((2,), MockRecord(name="Bob"))]
@@ -501,8 +503,8 @@ class TestIntersectionPlan:
 
     def test_initialization(self):
         """Test IntersectionPlan initialization."""
-        from fdb_record_layer.plans.intersection_plan import IntersectionPlan
         from fdb_record_layer.plans.base import EmptyPlan
+        from fdb_record_layer.plans.intersection_plan import IntersectionPlan
 
         child1 = EmptyPlan()
         child2 = EmptyPlan()
@@ -513,8 +515,8 @@ class TestIntersectionPlan:
 
     def test_explain(self):
         """Test IntersectionPlan explanation."""
-        from fdb_record_layer.plans.intersection_plan import IntersectionPlan
         from fdb_record_layer.plans.base import EmptyPlan
+        from fdb_record_layer.plans.intersection_plan import IntersectionPlan
 
         plan = IntersectionPlan(children=[EmptyPlan(), EmptyPlan()])
 
@@ -524,8 +526,8 @@ class TestIntersectionPlan:
     @pytest.mark.asyncio
     async def test_execute_intersects_results(self):
         """Test IntersectionPlan returns only records in all children."""
-        from fdb_record_layer.plans.intersection_plan import IntersectionPlan
         from fdb_record_layer.cursors.base import ListCursor
+        from fdb_record_layer.plans.intersection_plan import IntersectionPlan
 
         # Same primary key in both children
         records1 = [
@@ -591,8 +593,8 @@ class TestRecordQueryPlanWithChildren:
 
     def test_children_property(self):
         """Test children property."""
-        from fdb_record_layer.plans.union_plan import UnionPlan
         from fdb_record_layer.plans.base import EmptyPlan
+        from fdb_record_layer.plans.union_plan import UnionPlan
 
         child1 = EmptyPlan()
         child2 = EmptyPlan()
@@ -603,8 +605,8 @@ class TestRecordQueryPlanWithChildren:
 
     def test_uses_index_delegates(self):
         """Test uses_index checks all children."""
-        from fdb_record_layer.plans.union_plan import UnionPlan
         from fdb_record_layer.plans.index_plan import IndexScanPlan
+        from fdb_record_layer.plans.union_plan import UnionPlan
 
         child1 = IndexScanPlan(index_name="idx1", scan_comparisons=MagicMock())
         child2 = IndexScanPlan(index_name="idx2", scan_comparisons=MagicMock())

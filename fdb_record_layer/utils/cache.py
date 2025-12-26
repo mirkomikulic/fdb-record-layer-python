@@ -337,10 +337,7 @@ class QueryPlanCache:
         # iterating through the cache
         count = 0
         with self._cache._lock:
-            keys_to_remove = [
-                key for key in self._cache._cache.keys()
-                if table_name in key
-            ]
+            keys_to_remove = [key for key in self._cache._cache.keys() if table_name in key]
             for key in keys_to_remove:
                 del self._cache._cache[key]
                 count += 1
@@ -360,9 +357,9 @@ class QueryPlanCache:
             A string cache key.
         """
         # Get a string representation of the query
-        if hasattr(query, 'to_cache_key'):
+        if hasattr(query, "to_cache_key"):
             query_str = query.to_cache_key()
-        elif hasattr(query, '__dict__'):
+        elif hasattr(query, "__dict__"):
             query_str = str(sorted(query.__dict__.items()))
         else:
             query_str = str(query)
@@ -628,8 +625,7 @@ class MetadataCache:
         # Also invalidate any indexes for this table
         with self._indexes._lock:
             keys_to_remove = [
-                key for key in self._indexes._cache.keys()
-                if key.startswith(f"{name}.")
+                key for key in self._indexes._cache.keys() if key.startswith(f"{name}.")
             ]
             for key in keys_to_remove:
                 del self._indexes._cache[key]

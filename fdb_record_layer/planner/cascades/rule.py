@@ -70,9 +70,7 @@ class CascadesRule(ABC):
         return isinstance(expr.expression, self.pattern())
 
     @abstractmethod
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         """Apply the rule to produce alternative expressions.
 
         Args:
@@ -152,9 +150,7 @@ class PushFilterThroughProjectRule(TransformationRule):
                     return True
         return False
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import (
             LogicalFilter,
             LogicalProject,
@@ -202,9 +198,7 @@ class FilterMergeRule(TransformationRule):
                     return True
         return False
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import LogicalFilter
         from fdb_record_layer.query.components import AndComponent
 
@@ -219,9 +213,7 @@ class FilterMergeRule(TransformationRule):
                 combined = AndComponent([outer_filter.predicate, inner_filter.predicate])
 
                 # Create merged filter
-                merged = LogicalFilter(
-                    predicate=combined, input_expr=inner_filter.input_expr
-                )
+                merged = LogicalFilter(predicate=combined, input_expr=inner_filter.input_expr)
                 yield merged
                 break
 
@@ -253,9 +245,7 @@ class PredicatePushDownRule(TransformationRule):
                     return True
         return False
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import (
             LogicalFilter,
             LogicalUnion,
@@ -291,9 +281,7 @@ class ImplementScanRule(ImplementationRule):
 
         return LogicalScan
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import (
             LogicalScan,
             PhysicalScan,
@@ -313,9 +301,7 @@ class ImplementIndexScanRule(ImplementationRule):
 
         return LogicalIndexScan
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import (
             LogicalIndexScan,
             PhysicalIndexScan,
@@ -347,9 +333,7 @@ class ImplementFilterRule(ImplementationRule):
 
         return LogicalFilter
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import (
             LogicalFilter,
             PhysicalFilter,
@@ -372,9 +356,7 @@ class ImplementSortRule(ImplementationRule):
 
         return LogicalSort
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import LogicalSort, PhysicalSort
 
         logical = match.expression.expression
@@ -391,9 +373,7 @@ class ImplementUnionRule(ImplementationRule):
 
         return LogicalUnion
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import (
             LogicalUnion,
             PhysicalUnion,
@@ -413,9 +393,7 @@ class ImplementIntersectionRule(ImplementationRule):
 
         return LogicalIntersection
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import (
             LogicalIntersection,
             PhysicalIntersection,
@@ -457,9 +435,7 @@ class IndexSelectionRule(ImplementationRule):
                     return True
         return False
 
-    def apply(
-        self, match: RuleMatch, context: RuleContext
-    ) -> Iterator[RelationalExpression]:
+    def apply(self, match: RuleMatch, context: RuleContext) -> Iterator[RelationalExpression]:
         from fdb_record_layer.planner.cascades.expressions import (
             LogicalFilter,
             LogicalScan,
@@ -544,9 +520,7 @@ class IndexSelectionRule(ImplementationRule):
             return index.root_expression.field_name
         return None
 
-    def _split_predicate(
-        self, predicate: Any, indexed_field: str
-    ) -> tuple[Any | None, Any | None]:
+    def _split_predicate(self, predicate: Any, indexed_field: str) -> tuple[Any | None, Any | None]:
         """Split predicate into index-scannable and residual parts.
 
         Returns:
@@ -581,7 +555,9 @@ class IndexSelectionRule(ImplementationRule):
             residual_pred = (
                 AndComponent(residual_parts)
                 if len(residual_parts) > 1
-                else residual_parts[0] if residual_parts else None
+                else residual_parts[0]
+                if residual_parts
+                else None
             )
 
             return scan_pred, residual_pred

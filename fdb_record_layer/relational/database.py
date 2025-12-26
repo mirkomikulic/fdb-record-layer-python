@@ -159,8 +159,7 @@ class RelationalDatabase:
 
         else:
             return ExecutionResult(
-                success=False,
-                error=f"Unsupported statement type: {type(stmt).__name__}"
+                success=False, error=f"Unsupported statement type: {type(stmt).__name__}"
             )
 
     def _execute_select(
@@ -184,6 +183,7 @@ class RelationalDatabase:
                 if loop.is_running():
                     # We're inside an async context - create a task
                     import concurrent.futures
+
                     with concurrent.futures.ThreadPoolExecutor() as executor:
                         future = executor.submit(
                             asyncio.run, self._execute_select_from_store(translated)
@@ -205,8 +205,10 @@ class RelationalDatabase:
         # Apply sorting
         if translated.sort_fields:
             for field_name, descending in reversed(translated.sort_fields):
+
                 def sort_key(row: dict[str, Any], fname: str = field_name) -> tuple[bool, Any]:
                     return (row.get(fname) is None, row.get(fname))
+
                 data.sort(key=sort_key, reverse=descending)
 
         # Apply DISTINCT - use only projected columns for uniqueness
@@ -231,9 +233,9 @@ class RelationalDatabase:
 
         # Apply LIMIT and OFFSET
         if translated.offset:
-            data = data[translated.offset:]
+            data = data[translated.offset :]
         if translated.limit:
-            data = data[:translated.limit]
+            data = data[: translated.limit]
 
         # Handle aggregates
         if translated.aggregates:
@@ -244,9 +246,7 @@ class RelationalDatabase:
 
         return ExecutionResult(result_set=result_set)
 
-    async def _execute_select_from_store(
-        self, translated: TranslatedQuery
-    ) -> ExecutionResult:
+    async def _execute_select_from_store(self, translated: TranslatedQuery) -> ExecutionResult:
         """Execute a SELECT against the record store.
 
         Builds a RecordQuery from the translated SQL and executes it
@@ -255,9 +255,7 @@ class RelationalDatabase:
         from fdb_record_layer.query.query import RecordQuery
 
         if self._record_store is None:
-            return ExecutionResult(
-                success=False, error="No record store configured"
-            )
+            return ExecutionResult(success=False, error="No record store configured")
 
         # Build the RecordQuery
         record_types = translated.record_types or []
@@ -284,7 +282,7 @@ class RelationalDatabase:
 
             # Apply offset
             if translated.offset:
-                records = records[translated.offset:]
+                records = records[translated.offset :]
 
             # Build result set
             table_name = record_types[0] if record_types else "result"
@@ -359,8 +357,7 @@ class RelationalDatabase:
 
                 elif func_name == "AVG":
                     numeric_values = [
-                        r.get(field_name) for r in group_data
-                        if r.get(field_name) is not None
+                        r.get(field_name) for r in group_data if r.get(field_name) is not None
                     ]
                     if numeric_values:
                         total = sum(v for v in numeric_values if v is not None)
@@ -370,15 +367,13 @@ class RelationalDatabase:
 
                 elif func_name == "MIN":
                     comparable_values = [
-                        r.get(field_name) for r in group_data
-                        if r.get(field_name) is not None
+                        r.get(field_name) for r in group_data if r.get(field_name) is not None
                     ]
                     value = min(comparable_values) if comparable_values else None  # type: ignore[type-var]
 
                 elif func_name == "MAX":
                     comparable_values = [
-                        r.get(field_name) for r in group_data
-                        if r.get(field_name) is not None
+                        r.get(field_name) for r in group_data if r.get(field_name) is not None
                     ]
                     value = max(comparable_values) if comparable_values else None  # type: ignore[type-var]
 
@@ -486,7 +481,8 @@ class RelationalDatabase:
         else:
             # Delete matching rows
             self._data[table_name] = [
-                row for row in self._data[table_name]
+                row
+                for row in self._data[table_name]
                 if not self._evaluate_filter(row, translated.filter)
             ]
 
@@ -498,10 +494,7 @@ class RelationalDatabase:
         table_name = translated.table_name
 
         if table_name in self._schema.tables:
-            return ExecutionResult(
-                success=False,
-                error=f"Table already exists: {table_name}"
-            )
+            return ExecutionResult(success=False, error=f"Table already exists: {table_name}")
 
         # Create table in schema
         table = self._schema.create_table(table_name)
@@ -525,10 +518,7 @@ class RelationalDatabase:
         table = self._schema.get_table(translated.table_name)
 
         if table is None:
-            return ExecutionResult(
-                success=False,
-                error=f"Table not found: {translated.table_name}"
-            )
+            return ExecutionResult(success=False, error=f"Table not found: {translated.table_name}")
 
         table.add_index(
             translated.index_name,
@@ -558,16 +548,10 @@ class RelationalDatabase:
                 return filter_component.comparison.evaluate(field_value)
 
             elif isinstance(filter_component, AndComponent):
-                return all(
-                    self._evaluate_filter(row, child)
-                    for child in filter_component.children
-                )
+                return all(self._evaluate_filter(row, child) for child in filter_component.children)
 
             elif isinstance(filter_component, OrComponent):
-                return any(
-                    self._evaluate_filter(row, child)
-                    for child in filter_component.children
-                )
+                return any(self._evaluate_filter(row, child) for child in filter_component.children)
 
             elif isinstance(filter_component, NotComponent):
                 return not self._evaluate_filter(row, filter_component.child)
@@ -640,8 +624,9 @@ class RelationalDatabase:
             ValueError: If the identifier contains invalid characters.
         """
         import re
+
         # Only allow alphanumeric, underscore, and dollar sign
-        if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_$]*$', name):
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_$]*$", name):
             raise ValueError(f"Invalid SQL identifier: {name}")
         return name
 
@@ -688,9 +673,7 @@ class RelationalDatabase:
         safe_columns = [self._validate_identifier(k) for k in values.keys()]
 
         columns = ", ".join(safe_columns)
-        placeholders = ", ".join(
-            self._format_sql_value(v) for v in values.values()
-        )
+        placeholders = ", ".join(self._format_sql_value(v) for v in values.values())
         sql = f"INSERT INTO {safe_table} ({columns}) VALUES ({placeholders})"
         return self.execute(sql)
 

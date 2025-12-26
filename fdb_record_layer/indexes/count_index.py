@@ -219,9 +219,7 @@ class SumIndexMaintainer(IndexMaintainer):
     ) -> None:
         super().__init__(index, subspace, meta_data)
         # Get value field from index options or parameter
-        self._value_field = value_field or index.options.__dict__.get(
-            "value_field", "value"
-        )
+        self._value_field = value_field or index.options.__dict__.get("value_field", "value")
 
     def _get_value(self, record: Message) -> int:
         """Extract the numeric value from the record.

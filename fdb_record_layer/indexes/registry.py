@@ -97,9 +97,7 @@ class IndexMaintainerRegistry:
         """
         factory = self._factories.get(index.index_type)
         if factory is None:
-            raise ValueError(
-                f"No maintainer registered for index type: {index.index_type}"
-            )
+            raise ValueError(f"No maintainer registered for index type: {index.index_type}")
         return factory(index, subspace, meta_data)
 
     def has_type(self, index_type: IndexType) -> bool:

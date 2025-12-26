@@ -53,9 +53,7 @@ class MetaDataVersionMismatchError(MetaDataException):
     def __init__(self, expected: int, actual: int) -> None:
         self.expected = expected
         self.actual = actual
-        super().__init__(
-            f"Metadata version mismatch: expected {expected}, got {actual}"
-        )
+        super().__init__(f"Metadata version mismatch: expected {expected}, got {actual}")
 
 
 class SchemaEvolutionException(MetaDataException):

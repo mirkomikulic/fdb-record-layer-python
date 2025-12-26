@@ -75,8 +75,7 @@ class RecordMetaDataBuilder:
         descriptor = self._find_message_type(name)
         if descriptor is None:
             raise ValueError(
-                f"Message type '{name}' not found in file descriptor "
-                f"'{self._file_descriptor.name}'"
+                f"Message type '{name}' not found in file descriptor '{self._file_descriptor.name}'"
             )
 
         self._record_types[name] = RecordType(

@@ -86,9 +86,7 @@ class IndexScanPlan(RecordQueryPlan[M]):
         bindings = context.bindings
 
         # Convert scan comparisons to IndexScanRange
-        bounds = IndexScanBounds.from_scan_comparisons(
-            self._scan_comparisons, bindings
-        )
+        bounds = IndexScanBounds.from_scan_comparisons(self._scan_comparisons, bindings)
 
         scan_range = self._bounds_to_scan_range(bounds)
 

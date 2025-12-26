@@ -140,9 +140,7 @@ class CascadesPlanner:
         # Convert to RecordQueryPlan
         return self._expression_to_plan(physical_expr, query)
 
-    def optimize(
-        self, logical_expr: RelationalExpression
-    ) -> RelationalExpression | None:
+    def optimize(self, logical_expr: RelationalExpression) -> RelationalExpression | None:
         """Optimize a logical expression to find the best physical plan.
 
         Args:
@@ -160,9 +158,7 @@ class CascadesPlanner:
         root_group = self._memo.create_group(logical_expr)
 
         # Start optimization from root
-        self._add_task(
-            Task(task_type=TaskType.OPTIMIZE_GROUP, group=root_group)
-        )
+        self._add_task(Task(task_type=TaskType.OPTIMIZE_GROUP, group=root_group))
 
         # Process tasks until done
         self._process_tasks()
@@ -210,22 +206,26 @@ class CascadesPlanner:
         group.state = GroupState.OPTIMIZING
 
         # First explore the group to generate alternatives
-        self._add_task(Task(
-            task_type=TaskType.EXPLORE_GROUP,
-            group=group,
-            required_properties=task.required_properties,
-            cost_limit=task.cost_limit,
-        ))
+        self._add_task(
+            Task(
+                task_type=TaskType.EXPLORE_GROUP,
+                group=group,
+                required_properties=task.required_properties,
+                cost_limit=task.cost_limit,
+            )
+        )
 
         # Then optimize each expression
         for expr in list(group.expressions):
-            self._add_task(Task(
-                task_type=TaskType.OPTIMIZE_INPUTS,
-                group=group,
-                expression=expr,
-                required_properties=task.required_properties,
-                cost_limit=task.cost_limit,
-            ))
+            self._add_task(
+                Task(
+                    task_type=TaskType.OPTIMIZE_INPUTS,
+                    group=group,
+                    expression=expr,
+                    required_properties=task.required_properties,
+                    cost_limit=task.cost_limit,
+                )
+            )
 
     def _explore_group(self, task: Task) -> None:
         """Explore alternatives in a group."""
@@ -238,18 +238,22 @@ class CascadesPlanner:
 
         # Apply transformation rules to each logical expression
         for expr in list(group.get_logical_expressions()):
-            self._add_task(Task(
-                task_type=TaskType.EXPLORE_EXPRESSION,
-                group=group,
-                expression=expr,
-            ))
+            self._add_task(
+                Task(
+                    task_type=TaskType.EXPLORE_EXPRESSION,
+                    group=group,
+                    expression=expr,
+                )
+            )
 
             # Also try implementation rules
-            self._add_task(Task(
-                task_type=TaskType.IMPLEMENT_EXPRESSION,
-                group=group,
-                expression=expr,
-            ))
+            self._add_task(
+                Task(
+                    task_type=TaskType.IMPLEMENT_EXPRESSION,
+                    group=group,
+                    expression=expr,
+                )
+            )
 
         group.state = GroupState.EXPLORED
 
@@ -331,11 +335,13 @@ class CascadesPlanner:
 
         for child_group in expr.child_groups:
             # Recursively optimize child
-            self._add_task(Task(
-                task_type=TaskType.OPTIMIZE_GROUP,
-                group=child_group,
-                required_properties=None,  # Could propagate properties
-            ))
+            self._add_task(
+                Task(
+                    task_type=TaskType.OPTIMIZE_GROUP,
+                    group=child_group,
+                    required_properties=None,  # Could propagate properties
+                )
+            )
 
             # Get child's best cost
             child_winner = child_group.get_winner()
@@ -401,9 +407,7 @@ class CascadesPlanner:
                 sort_fields.append((key_expr.field_name, query.sort.reverse))
 
             if sort_fields:
-                base_expr = LogicalSort(
-                    sort_fields=tuple(sort_fields), input_expr=base_expr
-                )
+                base_expr = LogicalSort(sort_fields=tuple(sort_fields), input_expr=base_expr)
 
         return base_expr
 
@@ -438,9 +442,7 @@ class CascadesPlanner:
 
             scan_comparisons = ScanComparisons()
             if expr.scan_predicates:
-                scan_comparisons = self._predicate_to_scan_comparisons(
-                    expr.scan_predicates
-                )
+                scan_comparisons = self._predicate_to_scan_comparisons(expr.scan_predicates)
 
             return IndexScanPlan(
                 index_name=expr.index_name,

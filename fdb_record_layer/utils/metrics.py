@@ -151,8 +151,21 @@ class Histogram:
     """
 
     DEFAULT_BUCKETS = (
-        0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5,
-        0.75, 1.0, 2.5, 5.0, 7.5, 10.0, float('inf')
+        0.005,
+        0.01,
+        0.025,
+        0.05,
+        0.075,
+        0.1,
+        0.25,
+        0.5,
+        0.75,
+        1.0,
+        2.5,
+        5.0,
+        7.5,
+        10.0,
+        float("inf"),
     )
 
     def __init__(
@@ -266,7 +279,7 @@ class OperationMetrics:
     operation: str
     count: int = 0
     total_time: float = 0.0
-    min_time: float = float('inf')
+    min_time: float = float("inf")
     max_time: float = 0.0
     errors: int = 0
 
@@ -306,9 +319,7 @@ class MetricsCollector:
         self._deletes = Counter("fdb_deletes_total", "Total delete operations")
         self._queries = Counter("fdb_queries_total", "Total query executions")
         self._errors = LabeledCounter(
-            "fdb_errors_total",
-            ["operation", "error_type"],
-            "Total errors by type"
+            "fdb_errors_total", ["operation", "error_type"], "Total errors by type"
         )
 
         # Latency histograms
@@ -327,13 +338,9 @@ class MetricsCollector:
 
         # Gauges
         self._active_transactions = Gauge(
-            "fdb_active_transactions",
-            "Number of active transactions"
+            "fdb_active_transactions", "Number of active transactions"
         )
-        self._cache_size = Gauge(
-            "fdb_cache_size",
-            "Number of items in cache"
-        )
+        self._cache_size = Gauge("fdb_cache_size", "Number of items in cache")
 
         # Per-operation metrics
         self._operations: dict[str, OperationMetrics] = {}
@@ -481,7 +488,7 @@ class MetricsCollector:
                 name: {
                     "count": op.count,
                     "avg_time": op.avg_time,
-                    "min_time": op.min_time if op.min_time != float('inf') else 0,
+                    "min_time": op.min_time if op.min_time != float("inf") else 0,
                     "max_time": op.max_time,
                     "errors": op.errors,
                 }
@@ -577,14 +584,11 @@ class QueryLogger:
             context.duration = duration
 
             if duration > self._slow_threshold:
-                self._logger.warning(
-                    f"Slow query ({duration:.3f}s): {query[:100]}"
-                )
+                self._logger.warning(f"Slow query ({duration:.3f}s): {query[:100]}")
             else:
                 self._logger.log(
                     self._log_level,
-                    f"Query completed in {duration:.3f}s, "
-                    f"rows={context.rows_affected}"
+                    f"Query completed in {duration:.3f}s, rows={context.rows_affected}",
                 )
 
 
@@ -696,22 +700,22 @@ class PlanExplainer:
         plan_type = type(plan).__name__
 
         # Get plan-specific info
-        if hasattr(plan, 'index_name'):
+        if hasattr(plan, "index_name"):
             steps.append(f"{indent}Index Scan: {plan.index_name}")
-        elif hasattr(plan, 'record_types'):
+        elif hasattr(plan, "record_types"):
             steps.append(f"{indent}Table Scan: {plan.record_types}")
         else:
             steps.append(f"{indent}{plan_type}")
 
         # Get cost if available
-        if hasattr(plan, 'estimated_cost'):
+        if hasattr(plan, "estimated_cost"):
             costs.append(plan.estimated_cost)
 
         # Traverse children
-        if hasattr(plan, 'children'):
+        if hasattr(plan, "children"):
             for child in plan.children:
                 self._traverse_plan(child, steps, costs, depth + 1)
-        elif hasattr(plan, 'inner_plan'):
+        elif hasattr(plan, "inner_plan"):
             self._traverse_plan(plan.inner_plan, steps, costs, depth + 1)
 
 

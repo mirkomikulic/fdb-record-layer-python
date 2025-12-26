@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 # Subspace keys for rank index components
 ENTRIES_KEY = 0  # Actual entries: (score, pk) -> empty
-COUNTS_KEY = 1   # Level counts: (level, score_prefix) -> count
+COUNTS_KEY = 1  # Level counts: (level, score_prefix) -> count
 
 
 class RankIndexMaintainer(IndexMaintainer):
@@ -94,7 +94,7 @@ class RankIndexMaintainer(IndexMaintainer):
 
         # For numeric scores, divide by bucket size^level
         if isinstance(score, (int, float)):
-            divisor = self.BUCKET_SIZE ** level
+            divisor = self.BUCKET_SIZE**level
             return int(score) // divisor
 
         # For other types (strings, etc.), use prefix truncation
@@ -224,7 +224,7 @@ class RankIndexMaintainer(IndexMaintainer):
                 for i, val in enumerate(unpacked):
                     if isinstance(val, str) and val in self._meta_data.record_types:
                         record_type_name = val
-                        pk = unpacked[i + 1:]
+                        pk = unpacked[i + 1 :]
                         break
 
                 stored = record_loader(record_type_name, pk)

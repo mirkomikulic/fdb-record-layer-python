@@ -127,7 +127,7 @@ class NestedFieldComponent(QueryComponent):
             return False
 
         # Check if it's a repeated field
-        if hasattr(nested, '__iter__') and not isinstance(nested, (str, bytes)):
+        if hasattr(nested, "__iter__") and not isinstance(nested, (str, bytes)):
             # For repeated nested messages, check if any match
             return any(self.child.evaluate(item, bindings) for item in nested)
 
@@ -247,7 +247,7 @@ class OneOfThemComponent(QueryComponent):
         if field_value is None:
             return False
 
-        if not hasattr(field_value, '__iter__'):
+        if not hasattr(field_value, "__iter__"):
             # Not a repeated field, treat as single value
             return self.comparison.evaluate(field_value, bindings)
 

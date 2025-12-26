@@ -208,9 +208,7 @@ class CircuitBreaker:
         async with self._lock:
             if not await self._should_allow_request():
                 await self._record_rejection()
-                raise CircuitOpenError(
-                    f"Circuit breaker '{self._name}' is open"
-                )
+                raise CircuitOpenError(f"Circuit breaker '{self._name}' is open")
         return self
 
     async def __aexit__(

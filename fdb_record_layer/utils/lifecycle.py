@@ -62,9 +62,7 @@ class ShutdownConfig:
     force_on_timeout: bool = True
 
     # Signals to handle
-    signals: list[signal.Signals] = field(
-        default_factory=lambda: [signal.SIGTERM, signal.SIGINT]
-    )
+    signals: list[signal.Signals] = field(default_factory=lambda: [signal.SIGTERM, signal.SIGINT])
 
 
 class LifecycleManager:
@@ -154,19 +152,17 @@ class LifecycleManager:
             hook: Function to call during shutdown.
         """
         self._shutdown_hooks.append(hook)
-        hook_name = hook.__name__ if hasattr(hook, '__name__') else 'anonymous'
+        hook_name = hook.__name__ if hasattr(hook, "__name__") else "anonymous"
         logger.debug(f"Registered shutdown hook: {hook_name}")
 
-    def register_async_shutdown_hook(
-        self, hook: Callable[[], Coroutine[Any, Any, Any]]
-    ) -> None:
+    def register_async_shutdown_hook(self, hook: Callable[[], Coroutine[Any, Any, Any]]) -> None:
         """Register an async shutdown hook.
 
         Args:
             hook: Async function to call during shutdown.
         """
         self._async_shutdown_hooks.append(hook)
-        hook_name = hook.__name__ if hasattr(hook, '__name__') else 'anonymous'
+        hook_name = hook.__name__ if hasattr(hook, "__name__") else "anonymous"
         logger.debug(f"Registered async shutdown hook: {hook_name}")
 
     def start(self) -> None:
@@ -244,9 +240,7 @@ class LifecycleManager:
         """Install signal handlers for graceful shutdown."""
         for sig in self._config.signals:
             try:
-                self._original_handlers[sig] = signal.signal(
-                    sig, self._signal_handler
-                )
+                self._original_handlers[sig] = signal.signal(sig, self._signal_handler)
                 logger.debug(f"Installed signal handler for {sig.name}")
             except (ValueError, OSError) as e:
                 # Signal handling may not work in all environments (e.g., threads)
@@ -344,10 +338,7 @@ class LifecycleManager:
 
         remaining = self._get_in_flight_count()
         if remaining > 0:
-            _safe_log(
-                logging.WARNING,
-                f"Drain timeout: {remaining} requests still in flight"
-            )
+            _safe_log(logging.WARNING, f"Drain timeout: {remaining} requests still in flight")
 
     def _close_pools(self) -> None:
         """Close all registered connection pools."""
@@ -359,12 +350,10 @@ class LifecycleManager:
                     try:
                         loop = asyncio.get_running_loop()
                         # Schedule async close
-                        asyncio.run_coroutine_threadsafe(
-                            pool.close(), loop
-                        ).result(timeout=5.0)
+                        asyncio.run_coroutine_threadsafe(pool.close(), loop).result(timeout=5.0)
                     except RuntimeError:
                         # No event loop, try sync close if available
-                        if hasattr(pool, 'close_sync'):
+                        if hasattr(pool, "close_sync"):
                             pool.close_sync()
                         else:
                             # Create a new event loop for cleanup
@@ -379,7 +368,7 @@ class LifecycleManager:
         # Run sync hooks in reverse order
         for hook in reversed(self._shutdown_hooks):
             try:
-                hook_name = hook.__name__ if hasattr(hook, '__name__') else 'anonymous'
+                hook_name = hook.__name__ if hasattr(hook, "__name__") else "anonymous"
                 _safe_log(logging.DEBUG, f"Running shutdown hook: {hook_name}")
                 hook()
             except Exception as e:
@@ -391,9 +380,7 @@ class LifecycleManager:
                 loop = asyncio.get_running_loop()
                 for hook in reversed(self._async_shutdown_hooks):
                     try:
-                        asyncio.run_coroutine_threadsafe(
-                            hook(), loop
-                        ).result(timeout=5.0)
+                        asyncio.run_coroutine_threadsafe(hook(), loop).result(timeout=5.0)
                     except Exception as e:
                         _safe_log(logging.ERROR, f"Error in async shutdown hook: {e}")
             except RuntimeError:

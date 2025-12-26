@@ -54,10 +54,7 @@ class Index:
         return [col for col, _ in self.columns]
 
     def __repr__(self) -> str:
-        cols = ", ".join(
-            f"{c} DESC" if desc else c
-            for c, desc in self.columns
-        )
+        cols = ", ".join(f"{c} DESC" if desc else c for c, desc in self.columns)
         unique_str = "UNIQUE " if self.unique else ""
         return f"Index({self.name}: {unique_str}({cols}))"
 

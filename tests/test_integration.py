@@ -4,11 +4,11 @@ These tests verify end-to-end functionality across multiple components.
 They use mocked FDB to allow testing without a running database.
 """
 
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock
+
 import pytest
 
 # Ensure FDB is mocked before imports
-from tests.conftest import _mock_fdb
 
 
 class MockValue:
@@ -41,17 +41,14 @@ class MockTransaction:
         self._data.pop(key, None)
 
     def get_range(self, start: bytes, end: bytes, limit: int = 0):
-        items = [
-            (k, v)
-            for k, v in sorted(self._data.items())
-            if start <= k < end
-        ]
+        items = [(k, v) for k, v in sorted(self._data.items()) if start <= k < end]
         if limit:
             items = items[:limit]
         return items
 
     def add(self, key: bytes, value: bytes) -> None:
         import struct
+
         existing = self._data.get(key, b"\x00\x00\x00\x00\x00\x00\x00\x00")
         existing_val = struct.unpack("<q", existing)[0]
         new_val = struct.unpack("<q", value)[0]
@@ -100,7 +97,7 @@ class MockSubspace:
 
     def unpack(self, key: bytes):
         full = eval(key.decode())
-        return full[len(self._prefix):]
+        return full[len(self._prefix) :]
 
     def range(self):
         mock = MagicMock()
@@ -109,11 +106,25 @@ class MockSubspace:
         return mock
 
 
+class MockFieldDescriptor:
+    """Mock protobuf field descriptor."""
+
+    def __init__(self, name: str, label: int = 1):
+        self.name = name
+        # label: 1=OPTIONAL, 2=REQUIRED, 3=REPEATED
+        self.label = label
+
+
 class MockDescriptor:
     """Mock protobuf descriptor."""
 
     def __init__(self, name="TestRecord"):
         self.name = name
+        # Provide empty fields list by default
+        self.fields = []
+
+    def add_field(self, name: str, label: int = 1):
+        self.fields.append(MockFieldDescriptor(name, label))
 
 
 class MockRecord:
@@ -124,9 +135,12 @@ class MockRecord:
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-    def SerializeToString(self):
+    def SerializeToString(self):  # noqa: N802
         import json
-        data = {k: v for k, v in self.__dict__.items() if not k.startswith("_") and k != "DESCRIPTOR"}
+
+        data = {
+            k: v for k, v in self.__dict__.items() if not k.startswith("_") and k != "DESCRIPTOR"
+        }
         return json.dumps(data).encode()
 
 
@@ -135,11 +149,15 @@ class MockSerializer:
 
     def serialize(self, record):
         import json
-        data = {k: v for k, v in record.__dict__.items() if not k.startswith("_") and k != "DESCRIPTOR"}
+
+        data = {
+            k: v for k, v in record.__dict__.items() if not k.startswith("_") and k != "DESCRIPTOR"
+        }
         return json.dumps(data).encode()
 
     def deserialize(self, data: bytes, descriptor):
         import json
+
         obj = json.loads(data.decode())
         record = MockRecord(**obj)
         record.DESCRIPTOR = descriptor
@@ -222,11 +240,11 @@ class TestQueryBuilderIntegration:
 
     def test_query_with_filter(self):
         """Test creating a query with a filter."""
-        from fdb_record_layer.query.query import RecordQuery
+        from fdb_record_layer.query.comparisons import Comparison, ComparisonType
         from fdb_record_layer.query.components import FieldComponent
-        from fdb_record_layer.query.predicates import Comparisons
+        from fdb_record_layer.query.query import RecordQuery
 
-        filter_comp = FieldComponent("age", Comparisons.GREATER_THAN, 21)
+        filter_comp = FieldComponent("age", Comparison(ComparisonType.GREATER_THAN, 21))
 
         query = RecordQuery(
             record_types=["Person"],
@@ -305,7 +323,7 @@ class TestRetryLogicIntegration:
 
     def test_retry_config_in_context(self):
         """Test RetryConfig works with FDBRecordContext."""
-        from fdb_record_layer.core.context import RetryConfig, DEFAULT_RETRY_CONFIG
+        from fdb_record_layer.core.context import DEFAULT_RETRY_CONFIG, RetryConfig
 
         config = RetryConfig(
             max_retries=5,
@@ -388,8 +406,8 @@ class TestExpressionIntegration:
 
     def test_concat_expression_evaluation(self):
         """Test ConcatenateKeyExpression evaluation."""
-        from fdb_record_layer.expressions.field import FieldKeyExpression
         from fdb_record_layer.expressions.concat import ConcatenateKeyExpression
+        from fdb_record_layer.expressions.field import FieldKeyExpression
 
         expr1 = FieldKeyExpression("first_name")
         expr2 = FieldKeyExpression("last_name")
@@ -406,10 +424,16 @@ class TestMetaDataIntegration:
     """Integration tests for metadata operations."""
 
     def test_record_metadata_builder(self):
-        """Test RecordMetaDataBuilder."""
+        """Test RecordMetaDataBuilder requires a file_descriptor."""
+        from unittest.mock import MagicMock
+
         from fdb_record_layer.metadata.meta_data_builder import RecordMetaDataBuilder
 
-        builder = RecordMetaDataBuilder()
+        # RecordMetaDataBuilder requires a file_descriptor
+        mock_file_descriptor = MagicMock()
+        mock_file_descriptor.message_types_by_name = {}
+
+        builder = RecordMetaDataBuilder(mock_file_descriptor)
 
         # Should be able to create metadata
         metadata = builder.build()
@@ -433,8 +457,8 @@ class TestEndToEndWorkflow:
         # This test verifies the integration between components
         # without requiring a real FDB instance
 
-        from fdb_record_layer.query.query import RecordQuery
         from fdb_record_layer.planner.heuristic import HeuristicPlanner
+        from fdb_record_layer.query.query import RecordQuery
 
         # Set up metadata
         metadata = MockMetaData()
@@ -452,8 +476,8 @@ class TestEndToEndWorkflow:
 
     def test_explain_plan_output(self):
         """Test that explain produces readable output."""
-        from fdb_record_layer.query.query import RecordQuery
         from fdb_record_layer.planner.heuristic import HeuristicPlanner
+        from fdb_record_layer.query.query import RecordQuery
 
         metadata = MockMetaData()
         planner = HeuristicPlanner(metadata)
@@ -471,19 +495,19 @@ class TestSQLIntegration:
 
     def test_sql_lexer_tokenizes(self):
         """Test SQL lexer produces tokens."""
-        from fdb_record_layer.relational.sql.lexer import SQLLexer
+        from fdb_record_layer.relational.sql.lexer import Lexer
 
-        lexer = SQLLexer()
-        tokens = list(lexer.tokenize("SELECT * FROM users"))
+        lexer = Lexer("SELECT * FROM users")
+        tokens = list(lexer.tokenize())
 
         assert len(tokens) > 0
 
     def test_sql_parser_parses_select(self):
         """Test SQL parser handles SELECT statements."""
-        from fdb_record_layer.relational.sql.parser import SQLParser
+        from fdb_record_layer.relational.sql.parser import Parser
 
-        parser = SQLParser()
-        ast = parser.parse("SELECT * FROM users")
+        parser = Parser("SELECT * FROM users")
+        ast = parser.parse()
 
         assert ast is not None
 
@@ -496,8 +520,8 @@ class TestExceptionHierarchy:
         from fdb_record_layer.core.exceptions import (
             RecordLayerException,
             RecordNotFoundException,
-            TransactionException,
             TransactionConflictError,
+            TransactionException,
             TransactionRetryLimitExceeded,
         )
 

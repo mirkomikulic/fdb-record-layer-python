@@ -158,9 +158,7 @@ class RecordQueryBuilder:
         self._filter = filter_component
         return self
 
-    def set_sort(
-        self, key_expression: KeyExpression, reverse: bool = False
-    ) -> RecordQueryBuilder:
+    def set_sort(self, key_expression: KeyExpression, reverse: bool = False) -> RecordQueryBuilder:
         """Set the sort order.
 
         Args:
@@ -347,9 +345,7 @@ class QueryBuilder:
             self._filter = self._filter.and_(filter_component)
         return self
 
-    def sort(
-        self, key_expression: KeyExpression, reverse: bool = False
-    ) -> QueryBuilder:
+    def sort(self, key_expression: KeyExpression, reverse: bool = False) -> QueryBuilder:
         """Set the sort order.
 
         Args:

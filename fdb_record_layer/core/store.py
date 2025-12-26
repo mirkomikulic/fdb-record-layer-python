@@ -232,9 +232,7 @@ class FDBRecordStore(Generic[M]):
 
         loop = asyncio.get_event_loop()
         # FDB returns a future-like Value object
-        value = await loop.run_in_executor(
-            None, lambda: self.transaction[record_key]
-        )
+        value = await loop.run_in_executor(None, lambda: self.transaction[record_key])
 
         if not value.present():
             duration_ms = (time.perf_counter() - start_time) * 1000
@@ -312,11 +310,13 @@ class FDBRecordStore(Generic[M]):
                 results.append(None)
             else:
                 found_count += 1
-                results.append(FDBStoredRecord(
-                    primary_key=pk,
-                    record=record,  # type: ignore
-                    record_type=record_type,
-                ))
+                results.append(
+                    FDBStoredRecord(
+                        primary_key=pk,
+                        record=record,  # type: ignore
+                        record_type=record_type,
+                    )
+                )
 
         duration_ms = (time.perf_counter() - start_time) * 1000
         _logger.debug(
@@ -409,9 +409,7 @@ class FDBRecordStore(Generic[M]):
         record_key = self._records_subspace[record_type_name].pack(primary_key)
 
         loop = asyncio.get_event_loop()
-        value = await loop.run_in_executor(
-            None, lambda: self.transaction[record_key]
-        )
+        value = await loop.run_in_executor(None, lambda: self.transaction[record_key])
 
         return value.present()
 
@@ -446,9 +444,7 @@ class FDBRecordStore(Generic[M]):
 
         maintainer = self._index_maintainers[index_name]
 
-        def record_loader(
-            rt_name: str, pk: tuple[Any, ...]
-        ) -> FDBStoredRecord[Any] | None:
+        def record_loader(rt_name: str, pk: tuple[Any, ...]) -> FDBStoredRecord[Any] | None:
             # Synchronous loader for use in scan
             return self._load_record_sync(rt_name, pk)
 
@@ -501,6 +497,7 @@ class FDBRecordStore(Generic[M]):
         record_key = self._records_subspace[record_type_name].pack(primary_key)
 
         loop = asyncio.get_event_loop()
+
         # FDB returns a future-like Value object, need to wait for it
         def get_record_bytes() -> bytes | None:
             val = self.transaction[record_key]
@@ -555,9 +552,7 @@ class FDBRecordStore(Generic[M]):
             if record_bytes is None:
                 results[pk] = None
             else:
-                results[pk] = self._serializer.deserialize(
-                    record_bytes, record_type.descriptor
-                )
+                results[pk] = self._serializer.deserialize(record_bytes, record_type.descriptor)
 
         return results
 
@@ -760,9 +755,7 @@ class FDBRecordStore(Generic[M]):
             raise ValueError(f"'{index_name}' is not a RANK index")
         return maintainer.get_rank(self.transaction, score)
 
-    def get_by_rank(
-        self, index_name: str, rank: int
-    ) -> FDBStoredRecord[M] | None:
+    def get_by_rank(self, index_name: str, rank: int) -> FDBStoredRecord[M] | None:
         """Get record at a specific rank.
 
         Args:
@@ -889,9 +882,7 @@ class FDBRecordStore(Generic[M]):
             record_type = self._meta_data.get_record_type(record_type_name)
             primary_key_values = record_type.primary_key.evaluate(record)
             if len(primary_key_values) != 1:
-                raise InvalidPrimaryKeyException(
-                    "Primary key must evaluate to exactly one value"
-                )
+                raise InvalidPrimaryKeyException("Primary key must evaluate to exactly one value")
             primary_key = primary_key_values[0]
             records_info.append((record_type_name, primary_key, record, record_type))
 
@@ -914,11 +905,13 @@ class FDBRecordStore(Generic[M]):
             # Update indexes
             await self._update_indexes(record_type, primary_key, old_record, record)
 
-            results.append(FDBStoredRecord(
-                primary_key=primary_key,
-                record=record,
-                record_type=record_type,
-            ))
+            results.append(
+                FDBStoredRecord(
+                    primary_key=primary_key,
+                    record=record,
+                    record_type=record_type,
+                )
+            )
 
         duration_ms = (time.perf_counter() - start_time) * 1000
         _logger.debug(

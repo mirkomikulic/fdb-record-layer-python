@@ -56,9 +56,7 @@ class Field:
 
     def greater_than_or_equals(self, value: Any) -> FieldComponent:
         """Create a greater than or equals comparison."""
-        return FieldComponent(
-            self.name, Comparison(ComparisonType.GREATER_THAN_OR_EQUALS, value)
-        )
+        return FieldComponent(self.name, Comparison(ComparisonType.GREATER_THAN_OR_EQUALS, value))
 
     def less_than(self, value: Any) -> FieldComponent:
         """Create a less than comparison."""
@@ -66,9 +64,7 @@ class Field:
 
     def less_than_or_equals(self, value: Any) -> FieldComponent:
         """Create a less than or equals comparison."""
-        return FieldComponent(
-            self.name, Comparison(ComparisonType.LESS_THAN_OR_EQUALS, value)
-        )
+        return FieldComponent(self.name, Comparison(ComparisonType.LESS_THAN_OR_EQUALS, value))
 
     def starts_with(self, prefix: str) -> FieldComponent:
         """Create a starts with comparison."""
@@ -160,21 +156,15 @@ class Field:
     # Text search methods
     def text_contains_all(self, tokens: list[str]) -> FieldComponent:
         """Match if text field contains all tokens."""
-        return FieldComponent(
-            self.name, Comparison(ComparisonType.TEXT_CONTAINS_ALL, tokens)
-        )
+        return FieldComponent(self.name, Comparison(ComparisonType.TEXT_CONTAINS_ALL, tokens))
 
     def text_contains_any(self, tokens: list[str]) -> FieldComponent:
         """Match if text field contains any token."""
-        return FieldComponent(
-            self.name, Comparison(ComparisonType.TEXT_CONTAINS_ANY, tokens)
-        )
+        return FieldComponent(self.name, Comparison(ComparisonType.TEXT_CONTAINS_ANY, tokens))
 
     def text_contains_phrase(self, phrase: str) -> FieldComponent:
         """Match if text field contains phrase."""
-        return FieldComponent(
-            self.name, Comparison(ComparisonType.TEXT_CONTAINS_PHRASE, phrase)
-        )
+        return FieldComponent(self.name, Comparison(ComparisonType.TEXT_CONTAINS_PHRASE, phrase))
 
 
 class OneOfThemField:
@@ -185,30 +175,20 @@ class OneOfThemField:
 
     def equals(self, value: Any) -> OneOfThemComponent:
         """Match if any element equals value."""
-        return OneOfThemComponent(
-            self.name, Comparison(ComparisonType.EQUALS, value)
-        )
+        return OneOfThemComponent(self.name, Comparison(ComparisonType.EQUALS, value))
 
     def greater_than(self, value: Any) -> OneOfThemComponent:
         """Match if any element is greater than value."""
-        return OneOfThemComponent(
-            self.name, Comparison(ComparisonType.GREATER_THAN, value)
-        )
+        return OneOfThemComponent(self.name, Comparison(ComparisonType.GREATER_THAN, value))
 
     def less_than(self, value: Any) -> OneOfThemComponent:
         """Match if any element is less than value."""
-        return OneOfThemComponent(
-            self.name, Comparison(ComparisonType.LESS_THAN, value)
-        )
+        return OneOfThemComponent(self.name, Comparison(ComparisonType.LESS_THAN, value))
 
     def in_values(self, values: list[Any]) -> OneOfThemComponent:
         """Match if any element is in values."""
-        return OneOfThemComponent(
-            self.name, Comparison(ComparisonType.IN, values)
-        )
+        return OneOfThemComponent(self.name, Comparison(ComparisonType.IN, values))
 
     def starts_with(self, prefix: str) -> OneOfThemComponent:
         """Match if any element starts with prefix."""
-        return OneOfThemComponent(
-            self.name, Comparison(ComparisonType.STARTS_WITH, prefix)
-        )
+        return OneOfThemComponent(self.name, Comparison(ComparisonType.STARTS_WITH, prefix))

@@ -162,6 +162,7 @@ class DecimalType(SQLType):
 
     def python_type(self) -> type:
         from decimal import Decimal
+
         return Decimal
 
 
@@ -236,6 +237,7 @@ class TimestampType(SQLType):
 
     def python_type(self) -> type:
         from datetime import datetime
+
         return datetime
 
 
@@ -260,6 +262,7 @@ class DateType(SQLType):
 
     def python_type(self) -> type:
         from datetime import date
+
         return date
 
 
@@ -280,6 +283,7 @@ class TimeType(SQLType):
 
     def python_type(self) -> type:
         from datetime import time
+
         return time
 
 
@@ -373,9 +377,8 @@ class MapType(SQLType):
         if isinstance(other, NullType):
             return True
         if isinstance(other, MapType):
-            return (
-                self.key_type.is_compatible(other.key_type) and
-                self.value_type.is_compatible(other.value_type)
+            return self.key_type.is_compatible(other.key_type) and self.value_type.is_compatible(
+                other.value_type
             )
         return False
 
@@ -451,6 +454,7 @@ def infer_type(value: Any) -> SQLType:
     try:
         from datetime import date, datetime
         from datetime import time as time_type
+
         if isinstance(value, datetime):
             return TIMESTAMP
         if isinstance(value, date):
@@ -474,8 +478,9 @@ def common_type(type1: SQLType, type2: SQLType) -> SQLType | None:
         return type1
 
     # Numeric promotion
-    if isinstance(type1, (IntegerType, FloatType, DecimalType)) and \
-       isinstance(type2, (IntegerType, FloatType, DecimalType)):
+    if isinstance(type1, (IntegerType, FloatType, DecimalType)) and isinstance(
+        type2, (IntegerType, FloatType, DecimalType)
+    ):
         if isinstance(type1, DecimalType) or isinstance(type2, DecimalType):
             return DecimalType()
         if isinstance(type1, FloatType) or isinstance(type2, FloatType):
@@ -546,10 +551,7 @@ class TypeChecker:
         return self._column_types.get(name.lower())
 
     def check_binary_op(
-        self,
-        left: SQLType,
-        right: SQLType,
-        operator: str
+        self, left: SQLType, right: SQLType, operator: str
     ) -> tuple[SQLType | None, str | None]:
         """Check a binary operation and return result type."""
         # Comparison operators
@@ -582,9 +584,7 @@ class TypeChecker:
         return None, f"Unknown operator: {operator}"
 
     def check_function(
-        self,
-        name: str,
-        arg_types: list[SQLType]
+        self, name: str, arg_types: list[SQLType]
     ) -> tuple[SQLType | None, str | None]:
         """Check a function call and return result type."""
         name_upper = name.upper()

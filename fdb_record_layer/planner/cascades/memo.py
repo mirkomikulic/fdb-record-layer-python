@@ -112,9 +112,7 @@ class MemoGroup:
             if expr.expression.kind == ExpressionKind.PHYSICAL:
                 yield expr
 
-    def get_winner(
-        self, physical_properties: tuple | None = None
-    ) -> Winner | None:
+    def get_winner(self, physical_properties: tuple | None = None) -> Winner | None:
         """Get the winning plan for given physical properties."""
         key = physical_properties or ()
         return self.winners.get(key)
@@ -221,9 +219,7 @@ class Memo:
 
         return group
 
-    def get_or_create_group(
-        self, expression: RelationalExpression
-    ) -> tuple[MemoGroup, bool]:
+    def get_or_create_group(self, expression: RelationalExpression) -> tuple[MemoGroup, bool]:
         """Get existing group for expression or create a new one.
 
         Returns:
@@ -253,9 +249,7 @@ class Memo:
     ) -> GroupExpression:
         """Internal method to add expression to group."""
         # Create child group refs
-        child_groups = tuple(
-            self.get_or_create_group(child)[0] for child in expression.children
-        )
+        child_groups = tuple(self.get_or_create_group(child)[0] for child in expression.children)
 
         group_expr = GroupExpression(
             expression=expression,
@@ -401,9 +395,7 @@ class Memo:
         # Recursively extract children
         return self._extract_plan_recursive(winner.expression)
 
-    def _extract_plan_recursive(
-        self, group_expr: GroupExpression
-    ) -> RelationalExpression:
+    def _extract_plan_recursive(self, group_expr: GroupExpression) -> RelationalExpression:
         """Recursively extract plan from GroupExpression."""
         expression = group_expr.expression
 
@@ -485,9 +477,7 @@ class Memo:
                     kind = expr.expression.kind.name
                     lines.append(f"    [{kind}] {expr}")
                     if expr.child_groups:
-                        children = ", ".join(
-                            f"G{g.group_id}" for g in expr.child_groups
-                        )
+                        children = ", ".join(f"G{g.group_id}" for g in expr.child_groups)
                         lines.append(f"      Children: {children}")
 
         return "\n".join(lines)

@@ -77,17 +77,14 @@ class NestKeyExpression(KeyExpression):
             if field.name == self.parent_field:
                 if field.message_type is None:
                     errors.append(
-                        f"Field '{self.parent_field}' in {descriptor.name} "
-                        f"is not a message type"
+                        f"Field '{self.parent_field}' in {descriptor.name} is not a message type"
                     )
                     return errors
                 parent_descriptor = field.message_type
                 break
 
         if parent_descriptor is None:
-            errors.append(
-                f"Field '{self.parent_field}' not found in {descriptor.name}"
-            )
+            errors.append(f"Field '{self.parent_field}' not found in {descriptor.name}")
             return errors
 
         # Validate child against nested message descriptor

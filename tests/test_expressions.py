@@ -41,6 +41,7 @@ class TestFieldKeyExpression:
     def test_field_validate(self):
         """Test field expression validation."""
         from unittest.mock import MagicMock
+
         expr = field("name")
 
         # Create a mock descriptor with the field
@@ -56,6 +57,7 @@ class TestFieldKeyExpression:
     def test_field_validate_missing(self):
         """Test field expression validation with missing field."""
         from unittest.mock import MagicMock
+
         expr = field("missing_field")
 
         descriptor = MagicMock()

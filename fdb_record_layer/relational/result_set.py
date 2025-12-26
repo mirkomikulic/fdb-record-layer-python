@@ -65,12 +65,14 @@ class ResultSetMetadata:
         table_name: str | None = None,
     ) -> None:
         """Add a column to the metadata."""
-        self.columns.append(ColumnMetadata(
-            name=name,
-            sql_type=sql_type,
-            nullable=nullable,
-            table_name=table_name,
-        ))
+        self.columns.append(
+            ColumnMetadata(
+                name=name,
+                sql_type=sql_type,
+                nullable=nullable,
+                table_name=table_name,
+            )
+        )
 
 
 class Row:
@@ -114,10 +116,7 @@ class Row:
 
     def as_dict(self) -> dict[str, Any]:
         """Convert to a dictionary."""
-        return {
-            col.name: self._values[i]
-            for i, col in enumerate(self._metadata.columns)
-        }
+        return {col.name: self._values[i] for i, col in enumerate(self._metadata.columns)}
 
     def as_tuple(self) -> tuple[Any, ...]:
         """Convert to a tuple."""

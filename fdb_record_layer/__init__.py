@@ -34,6 +34,7 @@ _HAS_PROTOBUF = False
 # Core imports - require FDB
 try:
     from fdb_record_layer.core.context import FDBDatabase, FDBRecordContext
+
     _HAS_FDB = True
 except ImportError:
     FDBDatabase = None  # type: ignore
@@ -114,6 +115,7 @@ try:
         CompressedSerializer,
         ProtobufSerializer,
     )
+
     _HAS_PROTOBUF = True
 except ImportError:
     CompressedSerializer = None  # type: ignore

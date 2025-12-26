@@ -120,9 +120,7 @@ class HealthChecker:
         self._custom_checks: list[tuple[str, Callable[[], bool]]] = []
         self._async_checks: list[tuple[str, Callable[[], Any]]] = []
 
-    def register_database(
-        self, database: FDBDatabase, name: str = "fdb"
-    ) -> None:
+    def register_database(self, database: FDBDatabase, name: str = "fdb") -> None:
         """Register a database for health checking.
 
         Args:
@@ -131,9 +129,7 @@ class HealthChecker:
         """
         self._databases.append((name, database))
 
-    def register_pool(
-        self, pool: ConnectionPool, name: str = "connection_pool"
-    ) -> None:
+    def register_pool(self, pool: ConnectionPool, name: str = "connection_pool") -> None:
         """Register a connection pool for health checking.
 
         Args:
@@ -142,9 +138,7 @@ class HealthChecker:
         """
         self._pools.append((name, pool))
 
-    def register_check(
-        self, name: str, check_fn: Callable[[], bool]
-    ) -> None:
+    def register_check(self, name: str, check_fn: Callable[[], bool]) -> None:
         """Register a custom synchronous health check.
 
         Args:
@@ -153,9 +147,7 @@ class HealthChecker:
         """
         self._custom_checks.append((name, check_fn))
 
-    def register_async_check(
-        self, name: str, check_fn: Callable[[], Any]
-    ) -> None:
+    def register_async_check(self, name: str, check_fn: Callable[[], Any]) -> None:
         """Register a custom async health check.
 
         Args:
@@ -219,9 +211,7 @@ class HealthChecker:
         report = await self.check_health()
         return report.is_alive
 
-    async def _check_database(
-        self, name: str, database: FDBDatabase
-    ) -> ComponentHealth:
+    async def _check_database(self, name: str, database: FDBDatabase) -> ComponentHealth:
         """Check FDB database connectivity."""
         start_time = time.time()
 
@@ -266,9 +256,7 @@ class HealthChecker:
                 last_check=time.time(),
             )
 
-    def _check_pool(
-        self, name: str, pool: ConnectionPool
-    ) -> ComponentHealth:
+    def _check_pool(self, name: str, pool: ConnectionPool) -> ComponentHealth:
         """Check connection pool status."""
         try:
             stats = pool.stats()
@@ -282,8 +270,8 @@ class HealthChecker:
                 message = "Pool exhausted - no available connections"
             else:
                 status = HealthStatus.HEALTHY
-                avail = stats.get('available', 0)
-                in_use = stats.get('in_use', 0)
+                avail = stats.get("available", 0)
+                in_use = stats.get("in_use", 0)
                 message = f"Pool healthy: {avail} available, {in_use} in use"
 
             return ComponentHealth(
@@ -303,9 +291,7 @@ class HealthChecker:
                 last_check=time.time(),
             )
 
-    def _run_sync_check(
-        self, name: str, check_fn: Callable[[], bool]
-    ) -> ComponentHealth:
+    def _run_sync_check(self, name: str, check_fn: Callable[[], bool]) -> ComponentHealth:
         """Run a synchronous health check."""
         start_time = time.time()
 
@@ -330,9 +316,7 @@ class HealthChecker:
                 last_check=time.time(),
             )
 
-    async def _run_async_check(
-        self, name: str, check_fn: Callable[[], Any]
-    ) -> ComponentHealth:
+    async def _run_async_check(self, name: str, check_fn: Callable[[], Any]) -> ComponentHealth:
         """Run an async health check."""
         start_time = time.time()
 
@@ -368,9 +352,7 @@ class HealthChecker:
                 last_check=time.time(),
             )
 
-    def _compute_overall_status(
-        self, components: list[ComponentHealth]
-    ) -> HealthStatus:
+    def _compute_overall_status(self, components: list[ComponentHealth]) -> HealthStatus:
         """Compute overall health status from component statuses."""
         if not components:
             return HealthStatus.UNKNOWN
@@ -396,6 +378,7 @@ def get_health_checker() -> HealthChecker:
     global _global_health_checker
     if _global_health_checker is None:
         from fdb_record_layer import __version__
+
         _global_health_checker = HealthChecker(version=__version__)
     return _global_health_checker
 

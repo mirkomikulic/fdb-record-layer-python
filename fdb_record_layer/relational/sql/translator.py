@@ -182,10 +182,7 @@ def datatype_to_sql_type(data_type: DataType) -> SQLType:
 
     # Complex types
     if data_type.kind == DataTypeKind.DECIMAL:
-        return DecimalType(
-            precision=data_type.precision or 38,
-            scale=data_type.scale or 0
-        )
+        return DecimalType(precision=data_type.precision or 38, scale=data_type.scale or 0)
     if data_type.kind == DataTypeKind.ARRAY:
         if data_type.element_type:
             elem_type = datatype_to_sql_type(data_type.element_type)
@@ -210,11 +207,14 @@ class SQLTranslator:
         self._context = context or TranslationContext()
 
     def translate(
-        self,
-        statement: Statement
+        self, statement: Statement
     ) -> (
-        TranslatedQuery | TranslatedInsert | TranslatedUpdate |
-        TranslatedDelete | TranslatedCreateTable | TranslatedCreateIndex
+        TranslatedQuery
+        | TranslatedInsert
+        | TranslatedUpdate
+        | TranslatedDelete
+        | TranslatedCreateTable
+        | TranslatedCreateIndex
     ):
         """Translate a SQL statement.
 
@@ -378,12 +378,14 @@ class SQLTranslator:
             if col_def.default:
                 default_value = self._evaluate_literal(col_def.default)
 
-            columns.append((
-                col_def.name,
-                sql_type,
-                col_def.nullable,
-                default_value,
-            ))
+            columns.append(
+                (
+                    col_def.name,
+                    sql_type,
+                    col_def.nullable,
+                    default_value,
+                )
+            )
 
             if col_def.primary_key:
                 primary_key.append(col_def.name)
@@ -475,12 +477,10 @@ class SQLTranslator:
                 high = self._evaluate_literal(expr.high)
 
                 gte = FieldComponent(
-                    field_name,
-                    Comparison(ComparisonType.GREATER_THAN_OR_EQUALS, low)
+                    field_name, Comparison(ComparisonType.GREATER_THAN_OR_EQUALS, low)
                 )
                 lte = FieldComponent(
-                    field_name,
-                    Comparison(ComparisonType.LESS_THAN_OR_EQUALS, high)
+                    field_name, Comparison(ComparisonType.LESS_THAN_OR_EQUALS, high)
                 )
 
                 if expr.negated:
@@ -521,14 +521,14 @@ class SQLTranslator:
                     raise ValueError("LIKE operator requires a pattern")
                 pattern = self._evaluate_literal(expr.right)
                 if isinstance(pattern, str):
-                    if pattern.endswith('%') and not pattern.startswith('%'):
+                    if pattern.endswith("%") and not pattern.startswith("%"):
                         comp = Comparison(ComparisonType.STARTS_WITH, pattern[:-1])
-                    elif pattern.startswith('%') and pattern.endswith('%'):
+                    elif pattern.startswith("%") and pattern.endswith("%"):
                         comp = Comparison(ComparisonType.CONTAINS, pattern[1:-1])
-                    elif pattern.startswith('%'):
+                    elif pattern.startswith("%"):
                         comp = Comparison(ComparisonType.ENDS_WITH, pattern[1:])
                     else:
-                        comp = Comparison(ComparisonType.EQUALS, pattern.replace('%', ''))
+                        comp = Comparison(ComparisonType.EQUALS, pattern.replace("%", ""))
                     return FieldComponent(field_name, comp)
 
             elif expr.operator == ComparisonOp.NOT_LIKE:
@@ -536,14 +536,14 @@ class SQLTranslator:
                     raise ValueError("NOT LIKE operator requires a pattern")
                 pattern = self._evaluate_literal(expr.right)
                 if isinstance(pattern, str):
-                    if pattern.endswith('%') and not pattern.startswith('%'):
+                    if pattern.endswith("%") and not pattern.startswith("%"):
                         comp = Comparison(ComparisonType.STARTS_WITH, pattern[:-1])
-                    elif pattern.startswith('%') and pattern.endswith('%'):
+                    elif pattern.startswith("%") and pattern.endswith("%"):
                         comp = Comparison(ComparisonType.CONTAINS, pattern[1:-1])
-                    elif pattern.startswith('%'):
+                    elif pattern.startswith("%"):
                         comp = Comparison(ComparisonType.ENDS_WITH, pattern[1:])
                     else:
-                        comp = Comparison(ComparisonType.EQUALS, pattern.replace('%', ''))
+                        comp = Comparison(ComparisonType.EQUALS, pattern.replace("%", ""))
                     return NotComponent(child=FieldComponent(field_name, comp))
 
             # Standard comparisons
@@ -596,9 +596,7 @@ class SQLTranslator:
                 return left
             return OrComponent(children=[left, right])
 
-        raise ValueError(
-            f"Cannot translate binary expression with operator {expr.operator}"
-        )
+        raise ValueError(f"Cannot translate binary expression with operator {expr.operator}")
 
     def _evaluate_literal(self, expr: Expression) -> Any:
         """Evaluate an expression to a literal value."""
@@ -618,11 +616,14 @@ class SQLTranslator:
 
 
 def translate_sql(
-    sql: str,
-    context: TranslationContext | None = None
+    sql: str, context: TranslationContext | None = None
 ) -> (
-    TranslatedQuery | TranslatedInsert | TranslatedUpdate |
-    TranslatedDelete | TranslatedCreateTable | TranslatedCreateIndex
+    TranslatedQuery
+    | TranslatedInsert
+    | TranslatedUpdate
+    | TranslatedDelete
+    | TranslatedCreateTable
+    | TranslatedCreateIndex
 ):
     """Parse and translate a SQL statement.
 
@@ -641,8 +642,7 @@ def translate_sql(
 
 
 def sql_to_record_query(
-    sql: str,
-    table_to_record_type: dict[str, str] | None = None
+    sql: str, table_to_record_type: dict[str, str] | None = None
 ) -> tuple[Any, TranslatedQuery]:
     """Convert a SQL SELECT to a RecordQuery.
 

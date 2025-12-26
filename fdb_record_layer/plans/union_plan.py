@@ -108,9 +108,7 @@ class UnionPlan(RecordQueryPlanWithChildren[M]):
             total_rows += child_complexity.estimated_rows
             total_index_scans += child_complexity.index_scans
             total_full_scans += child_complexity.full_scans
-            max_filter_complexity = max(
-                max_filter_complexity, child_complexity.filter_complexity
-            )
+            max_filter_complexity = max(max_filter_complexity, child_complexity.filter_complexity)
 
         return PlanComplexity(
             estimated_rows=total_rows,

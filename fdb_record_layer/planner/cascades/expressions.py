@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 class ExpressionKind(str, Enum):
     """Categories of expressions."""
+
     LOGICAL = "logical"
     PHYSICAL = "physical"
 
@@ -30,6 +31,7 @@ class ExpressionProperty:
     - Cost estimation
     - Plan validation
     """
+
     output_fields: frozenset[str] = field(default_factory=frozenset)
     record_types: frozenset[str] = field(default_factory=frozenset)
     is_ordered: bool = False
@@ -99,6 +101,7 @@ class RelationalExpression(ABC):
 # Logical Expressions - describe WHAT to compute
 # =============================================================================
 
+
 class LogicalExpression(RelationalExpression):
     """Base for logical expressions."""
 
@@ -113,6 +116,7 @@ class LogicalScan(LogicalExpression):
 
     Represents: "get all records of type X"
     """
+
     record_types: tuple[str, ...]
 
     @property
@@ -146,6 +150,7 @@ class LogicalFilter(LogicalExpression):
 
     Represents: "apply predicate P to input"
     """
+
     predicate: Any  # QueryComponent
     input_expr: RelationalExpression
 
@@ -172,9 +177,11 @@ class LogicalFilter(LogicalExpression):
         return hash(("LogicalFilter", id(self.predicate), hash(self.input_expr)))
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, LogicalFilter) and
-                other.predicate == self.predicate and
-                other.input_expr == self.input_expr)
+        return (
+            isinstance(other, LogicalFilter)
+            and other.predicate == self.predicate
+            and other.input_expr == self.input_expr
+        )
 
 
 @dataclass(frozen=True)
@@ -183,6 +190,7 @@ class LogicalProject(LogicalExpression):
 
     Represents: "output only fields F from input"
     """
+
     fields: tuple[str, ...]
     input_expr: RelationalExpression
 
@@ -210,9 +218,11 @@ class LogicalProject(LogicalExpression):
         return hash(("LogicalProject", self.fields, hash(self.input_expr)))
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, LogicalProject) and
-                other.fields == self.fields and
-                other.input_expr == self.input_expr)
+        return (
+            isinstance(other, LogicalProject)
+            and other.fields == self.fields
+            and other.input_expr == self.input_expr
+        )
 
 
 @dataclass(frozen=True)
@@ -221,6 +231,7 @@ class LogicalSort(LogicalExpression):
 
     Represents: "sort input by fields F"
     """
+
     sort_fields: tuple[tuple[str, bool], ...]  # (field, descending)
     input_expr: RelationalExpression
 
@@ -250,9 +261,11 @@ class LogicalSort(LogicalExpression):
         return hash(("LogicalSort", self.sort_fields, hash(self.input_expr)))
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, LogicalSort) and
-                other.sort_fields == self.sort_fields and
-                other.input_expr == self.input_expr)
+        return (
+            isinstance(other, LogicalSort)
+            and other.sort_fields == self.sort_fields
+            and other.input_expr == self.input_expr
+        )
 
 
 @dataclass(frozen=True)
@@ -261,6 +274,7 @@ class LogicalUnion(LogicalExpression):
 
     Represents: "combine results from multiple inputs"
     """
+
     inputs: tuple[RelationalExpression, ...]
     remove_duplicates: bool = True
 
@@ -289,14 +303,17 @@ class LogicalUnion(LogicalExpression):
         return hash(("LogicalUnion", self.inputs, self.remove_duplicates))
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, LogicalUnion) and
-                other.inputs == self.inputs and
-                other.remove_duplicates == self.remove_duplicates)
+        return (
+            isinstance(other, LogicalUnion)
+            and other.inputs == self.inputs
+            and other.remove_duplicates == self.remove_duplicates
+        )
 
 
 @dataclass(frozen=True)
 class LogicalIntersection(LogicalExpression):
     """Logical intersection of multiple inputs."""
+
     inputs: tuple[RelationalExpression, ...]
 
     @property
@@ -335,6 +352,7 @@ class LogicalIndexScan(LogicalExpression):
     This is a "semi-physical" expression - it specifies which index
     but not the exact implementation details.
     """
+
     index_name: str
     scan_predicates: Any  # ScanComparisons
     record_types: tuple[str, ...]
@@ -363,14 +381,17 @@ class LogicalIndexScan(LogicalExpression):
         return hash(("LogicalIndexScan", self.index_name, id(self.scan_predicates)))
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, LogicalIndexScan) and
-                other.index_name == self.index_name and
-                other.scan_predicates == self.scan_predicates)
+        return (
+            isinstance(other, LogicalIndexScan)
+            and other.index_name == self.index_name
+            and other.scan_predicates == self.scan_predicates
+        )
 
 
 # =============================================================================
 # Physical Expressions - describe HOW to compute
 # =============================================================================
+
 
 class PhysicalExpression(RelationalExpression):
     """Base for physical expressions."""
@@ -383,6 +404,7 @@ class PhysicalExpression(RelationalExpression):
 @dataclass(frozen=True)
 class PhysicalScan(PhysicalExpression):
     """Physical full table scan."""
+
     record_types: tuple[str, ...]
 
     @property
@@ -411,6 +433,7 @@ class PhysicalScan(PhysicalExpression):
 @dataclass(frozen=True)
 class PhysicalIndexScan(PhysicalExpression):
     """Physical index scan."""
+
     index_name: str
     scan_predicates: Any  # ScanComparisons
     reverse: bool = False
@@ -433,13 +456,13 @@ class PhysicalIndexScan(PhysicalExpression):
         return hash(("PhysicalIndexScan", self.index_name, id(self.scan_predicates)))
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, PhysicalIndexScan) and
-                other.index_name == self.index_name)
+        return isinstance(other, PhysicalIndexScan) and other.index_name == self.index_name
 
 
 @dataclass(frozen=True)
 class PhysicalFilter(PhysicalExpression):
     """Physical filter (post-scan predicate evaluation)."""
+
     predicate: Any
     input_expr: RelationalExpression
 
@@ -453,9 +476,7 @@ class PhysicalFilter(PhysicalExpression):
     def derive_properties(self, child_props: list[ExpressionProperty]) -> ExpressionProperty:
         if not child_props:
             return ExpressionProperty()
-        return child_props[0].with_cardinality(
-            max(1, child_props[0].estimated_cardinality // 2)
-        )
+        return child_props[0].with_cardinality(max(1, child_props[0].estimated_cardinality // 2))
 
     def matches_pattern(self, pattern: RelationalExpression) -> bool:
         return isinstance(pattern, PhysicalFilter)
@@ -464,13 +485,13 @@ class PhysicalFilter(PhysicalExpression):
         return hash(("PhysicalFilter", id(self.predicate), hash(self.input_expr)))
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, PhysicalFilter) and
-                other.predicate == self.predicate)
+        return isinstance(other, PhysicalFilter) and other.predicate == self.predicate
 
 
 @dataclass(frozen=True)
 class PhysicalUnion(PhysicalExpression):
     """Physical union with deduplication."""
+
     inputs: tuple[RelationalExpression, ...]
 
     @property
@@ -497,6 +518,7 @@ class PhysicalUnion(PhysicalExpression):
 @dataclass(frozen=True)
 class PhysicalIntersection(PhysicalExpression):
     """Physical intersection."""
+
     inputs: tuple[RelationalExpression, ...]
 
     @property
@@ -526,6 +548,7 @@ class PhysicalIntersection(PhysicalExpression):
 @dataclass(frozen=True)
 class PhysicalSort(PhysicalExpression):
     """Physical sort operation."""
+
     sort_fields: tuple[tuple[str, bool], ...]
     input_expr: RelationalExpression
 
@@ -552,5 +575,4 @@ class PhysicalSort(PhysicalExpression):
         return hash(("PhysicalSort", self.sort_fields, hash(self.input_expr)))
 
     def __eq__(self, other: object) -> bool:
-        return (isinstance(other, PhysicalSort) and
-                other.sort_fields == self.sort_fields)
+        return isinstance(other, PhysicalSort) and other.sort_fields == self.sort_fields

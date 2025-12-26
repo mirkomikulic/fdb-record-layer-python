@@ -349,11 +349,7 @@ class TestQueryBuilder:
 
     def test_query_builder_basic(self):
         """Test basic query building."""
-        query = (
-            Query.from_type("Person")
-            .where(Field("name").equals("John"))
-            .build()
-        )
+        query = Query.from_type("Person").where(Field("name").equals("John")).build()
         assert isinstance(query, RecordQuery)
         assert "Person" in query.record_types
 
@@ -361,10 +357,7 @@ class TestQueryBuilder:
         """Test query builder with AND using Query.and_()."""
         query = (
             Query.from_type("Person")
-            .where(Query.and_(
-                Field("age").greater_than(18),
-                Field("active").equals(True)
-            ))
+            .where(Query.and_(Field("age").greater_than(18), Field("active").equals(True)))
             .build()
         )
         assert isinstance(query, RecordQuery)
@@ -374,10 +367,7 @@ class TestQueryBuilder:
         """Test query builder with OR using Query.or_()."""
         query = (
             Query.from_type("Person")
-            .where(Query.or_(
-                Field("status").equals("active"),
-                Field("status").equals("pending")
-            ))
+            .where(Query.or_(Field("status").equals("active"), Field("status").equals("pending")))
             .build()
         )
         assert isinstance(query, RecordQuery)
@@ -385,23 +375,14 @@ class TestQueryBuilder:
 
     def test_query_builder_multiple_types(self):
         """Test query builder with multiple record types."""
-        query = (
-            Query.from_types("Person", "Employee")
-            .where(Field("active").equals(True))
-            .build()
-        )
+        query = Query.from_types("Person", "Employee").where(Field("active").equals(True)).build()
         assert len(query.record_types) == 2
         assert "Person" in query.record_types
         assert "Employee" in query.record_types
 
     def test_query_builder_distinct(self):
         """Test query builder with distinct."""
-        query = (
-            Query.from_type("Person")
-            .where(Field("active").equals(True))
-            .distinct()
-            .build()
-        )
+        query = Query.from_type("Person").where(Field("active").equals(True)).distinct().build()
         assert query.removes_duplicates is True
 
 
@@ -444,13 +425,19 @@ class TestComplexQueries:
         query = (
             Query.from_type("Person")
             .where(
-                AndComponent([
-                    FieldComponent("active", Comparison(ComparisonType.EQUALS, True)),
-                    OrComponent([
-                        FieldComponent("role", Comparison(ComparisonType.EQUALS, "admin")),
-                        FieldComponent("role", Comparison(ComparisonType.EQUALS, "moderator")),
-                    ])
-                ])
+                AndComponent(
+                    [
+                        FieldComponent("active", Comparison(ComparisonType.EQUALS, True)),
+                        OrComponent(
+                            [
+                                FieldComponent("role", Comparison(ComparisonType.EQUALS, "admin")),
+                                FieldComponent(
+                                    "role", Comparison(ComparisonType.EQUALS, "moderator")
+                                ),
+                            ]
+                        ),
+                    ]
+                )
             )
             .build()
         )
@@ -458,10 +445,12 @@ class TestComplexQueries:
 
     def test_not_with_and(self):
         """Test NOT with AND."""
-        inner = AndComponent([
-            FieldComponent("deleted", Comparison(ComparisonType.EQUALS, True)),
-            FieldComponent("archived", Comparison(ComparisonType.EQUALS, True)),
-        ])
+        inner = AndComponent(
+            [
+                FieldComponent("deleted", Comparison(ComparisonType.EQUALS, True)),
+                FieldComponent("archived", Comparison(ComparisonType.EQUALS, True)),
+            ]
+        )
         not_comp = NotComponent(inner)
 
         query = Query.from_type("Document").where(not_comp).build()

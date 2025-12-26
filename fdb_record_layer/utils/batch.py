@@ -149,7 +149,7 @@ class BatchProcessor(Generic[T, R]):
             except Exception as e:
                 last_error = str(e)
                 if attempt < self._config.retry_limit - 1:
-                    await asyncio.sleep(0.1 * (2 ** attempt))  # Exponential backoff
+                    await asyncio.sleep(0.1 * (2**attempt))  # Exponential backoff
 
         # All retries failed
         return BatchResult(failed=[(item, last_error or "Unknown error") for item in batch])
@@ -157,7 +157,7 @@ class BatchProcessor(Generic[T, R]):
     def _split_into_batches(self, items: list[T]) -> Iterator[list[T]]:
         """Split items into batches."""
         for i in range(0, len(items), self._config.batch_size):
-            yield items[i:i + self._config.batch_size]
+            yield items[i : i + self._config.batch_size]
 
 
 class BatchWriter:
@@ -223,11 +223,11 @@ class BatchWriter:
 
         # Process in batches if buffer exceeds batch size
         while self._buffer:
-            batch = self._buffer[:self._config.batch_size]
-            self._buffer = self._buffer[self._config.batch_size:]
+            batch = self._buffer[: self._config.batch_size]
+            self._buffer = self._buffer[self._config.batch_size :]
 
             for record in batch:
-                if hasattr(self._store, 'save_record'):
+                if hasattr(self._store, "save_record"):
                     await self._store.save_record(record)
 
             self._total_written += len(batch)
@@ -294,11 +294,11 @@ class BatchReader:
         results: list[Any] = []
 
         for i in range(0, len(keys), self._config.batch_size):
-            batch_keys = keys[i:i + self._config.batch_size]
+            batch_keys = keys[i : i + self._config.batch_size]
             batch_results = []
 
             for key in batch_keys:
-                if hasattr(self._store, 'load_record'):
+                if hasattr(self._store, "load_record"):
                     record = await self._store.load_record(record_type, key)
                     batch_results.append(record)
                 else:
@@ -325,7 +325,7 @@ class BatchReader:
         Returns:
             List of records.
         """
-        if hasattr(self._store, 'scan_records'):
+        if hasattr(self._store, "scan_records"):
             return await self._store.scan_records(record_type, limit=limit)
         return []
 
@@ -458,19 +458,19 @@ class WriteBuffer:
         count = 0
 
         for record in self._inserts:
-            if hasattr(store, 'save_record'):
+            if hasattr(store, "save_record"):
                 await store.save_record(record)
                 count += 1
 
         for record, changes in self._updates:
-            if hasattr(store, 'save_record'):
+            if hasattr(store, "save_record"):
                 for key, value in changes.items():
                     setattr(record, key, value)
                 await store.save_record(record)
                 count += 1
 
         for record_type, primary_key in self._deletes:
-            if hasattr(store, 'delete_record'):
+            if hasattr(store, "delete_record"):
                 await store.delete_record(record_type, primary_key)
                 count += 1
 

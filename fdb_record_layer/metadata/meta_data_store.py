@@ -70,9 +70,7 @@ class MetaDataSerializer:
         """Serialize a RecordType to bytes."""
         data = {
             "name": record_type.name,
-            "primary_key": MetaDataSerializer._serialize_key_expression(
-                record_type.primary_key
-            ),
+            "primary_key": MetaDataSerializer._serialize_key_expression(record_type.primary_key),
             "since_version": record_type.since_version,
             # Note: descriptor is not serialized - it comes from protobuf
         }
@@ -83,9 +81,7 @@ class MetaDataSerializer:
         """Serialize an Index to bytes."""
         data = {
             "name": index.name,
-            "root_expression": MetaDataSerializer._serialize_key_expression(
-                index.root_expression
-            ),
+            "root_expression": MetaDataSerializer._serialize_key_expression(index.root_expression),
             "index_type": index.index_type.value,
             "record_types": index.record_types,
             "options": index.options.to_dict() if hasattr(index.options, "to_dict") else {},
@@ -123,8 +119,7 @@ class MetaDataSerializer:
             return {
                 "type": "concat",
                 "children": [
-                    MetaDataSerializer._serialize_key_expression(c)
-                    for c in expr.children
+                    MetaDataSerializer._serialize_key_expression(c) for c in expr.children
                 ],
             }
         elif isinstance(expr, NestKeyExpression):
@@ -158,17 +153,12 @@ class MetaDataSerializer:
             return FieldKeyExpression(field_name=data["field_name"], fan_type=fan_type)
 
         elif expr_type == "concat":
-            children = [
-                MetaDataSerializer.deserialize_key_expression(c)
-                for c in data["children"]
-            ]
+            children = [MetaDataSerializer.deserialize_key_expression(c) for c in data["children"]]
             return ConcatenateKeyExpression(children=children)
 
         elif expr_type == "nest":
             child = MetaDataSerializer.deserialize_key_expression(data["child"])
-            return NestKeyExpression(
-                parent_field=data["parent_field"], child=child
-            )
+            return NestKeyExpression(parent_field=data["parent_field"], child=child)
 
         else:
             raise ValueError(f"Unknown expression type: {expr_type}")
@@ -211,9 +201,7 @@ class FDBMetaDataStore:
 
     def _former_index_key(self, name: str, removed_version: int) -> bytes:
         """Get the key for a former index."""
-        return self._subspace.pack(
-            (MetaDataKeySpace.FORMER_INDEXES, name, removed_version)
-        )
+        return self._subspace.pack((MetaDataKeySpace.FORMER_INDEXES, name, removed_version))
 
     async def save_metadata(
         self,
@@ -239,18 +227,14 @@ class FDBMetaDataStore:
             if current_header is not None and current_header.version != expected_version:
                 from fdb_record_layer.core.exceptions import MetaDataVersionMismatchError
 
-                raise MetaDataVersionMismatchError(
-                    expected_version, current_header.version
-                )
+                raise MetaDataVersionMismatchError(expected_version, current_header.version)
 
         # Create or update header
         existing_header = await self._load_header(tr)
         header = MetaDataHeader(
             version=metadata.version,
             created_timestamp=(
-                existing_header.created_timestamp
-                if existing_header
-                else time.time()
+                existing_header.created_timestamp if existing_header else time.time()
             ),
             modified_timestamp=time.time(),
         )
@@ -267,9 +251,7 @@ class FDBMetaDataStore:
 
         # Save record types
         for name, record_type in metadata.record_types.items():
-            tr[self._record_type_key(name)] = self._serializer.serialize_record_type(
-                record_type
-            )
+            tr[self._record_type_key(name)] = self._serializer.serialize_record_type(record_type)
 
         # Save indexes
         for name, index in metadata.indexes.items():
@@ -277,9 +259,7 @@ class FDBMetaDataStore:
 
         # Save former indexes
         for former_index in metadata.former_indexes:
-            key = self._former_index_key(
-                former_index.name, former_index.removed_version
-            )
+            key = self._former_index_key(former_index.name, former_index.removed_version)
             tr[key] = self._serializer.serialize_former_index(former_index)
 
     async def load_metadata(
@@ -308,9 +288,7 @@ class FDBMetaDataStore:
         record_types: dict[str, RecordType] = {}
         record_types_range = self._subspace.range((MetaDataKeySpace.RECORD_TYPES,))
 
-        async for key, value in tr.get_range(
-            record_types_range.start, record_types_range.stop
-        ):
+        async for key, value in tr.get_range(record_types_range.start, record_types_range.stop):
             data = json.loads(value.decode("utf-8"))
             name = data["name"]
 
@@ -320,9 +298,7 @@ class FDBMetaDataStore:
                 descriptor = file_descriptor.message_types_by_name[name]
 
             if descriptor is not None:
-                primary_key = self._serializer.deserialize_key_expression(
-                    data["primary_key"]
-                )
+                primary_key = self._serializer.deserialize_key_expression(data["primary_key"])
                 record_types[name] = RecordType(
                     name=name,
                     descriptor=descriptor,
@@ -336,9 +312,7 @@ class FDBMetaDataStore:
 
         async for key, value in tr.get_range(indexes_range.start, indexes_range.stop):
             data = json.loads(value.decode("utf-8"))
-            root_expression = self._serializer.deserialize_key_expression(
-                data["root_expression"]
-            )
+            root_expression = self._serializer.deserialize_key_expression(data["root_expression"])
             indexes[data["name"]] = Index(
                 name=data["name"],
                 root_expression=root_expression,
@@ -412,9 +386,7 @@ class CachedMetaDataStore:
         self._cached_metadata: RecordMetaData | None = None
         self._cached_version: int | None = None
 
-    async def get_metadata(
-        self, tr: Any, file_descriptor: Any
-    ) -> RecordMetaData | None:
+    async def get_metadata(self, tr: Any, file_descriptor: Any) -> RecordMetaData | None:
         """Get metadata, using cache if available.
 
         Args:
@@ -427,10 +399,7 @@ class CachedMetaDataStore:
         # Check if cache is valid
         current_version = await self._store.get_version(tr)
 
-        if (
-            self._cached_metadata is not None
-            and self._cached_version == current_version
-        ):
+        if self._cached_metadata is not None and self._cached_version == current_version:
             return self._cached_metadata
 
         # Load fresh

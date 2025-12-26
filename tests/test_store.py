@@ -1,11 +1,10 @@
 """Tests for FDBRecordStore CRUD operations."""
 
-import asyncio
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 # Ensure FDB is mocked before imports
-from tests.conftest import _mock_fdb
 
 
 class MockValue:
@@ -40,11 +39,7 @@ class MockTransaction:
 
     def get_range(self, start: bytes, end: bytes):
         """Return items in the range."""
-        return [
-            (k, v)
-            for k, v in sorted(self._data.items())
-            if start <= k < end
-        ]
+        return [(k, v) for k, v in sorted(self._data.items()) if start <= k < end]
 
     def commit(self):
         """Mock commit returning a waitable."""
@@ -85,7 +80,7 @@ class MockSubspace:
         # Simple unpacking for testing
         key_str = key.decode()
         # Extract last tuple element for primary key
-        return eval(key_str[len(str(self._prefix)):])
+        return eval(key_str[len(str(self._prefix)) :])
 
     def range(self):
         """Return range boundaries."""
@@ -111,10 +106,10 @@ class MockRecord:
         self.age = age
         self.DESCRIPTOR = MockDescriptor()
 
-    def SerializeToString(self) -> bytes:
+    def SerializeToString(self) -> bytes:  # noqa: N802
         return f"{self.id}|{self.name}|{self.age}".encode()
 
-    def ListFields(self):
+    def ListFields(self):  # noqa: N802
         return [
             (MagicMock(name="id"), self.id),
             (MagicMock(name="name"), self.name),
@@ -241,9 +236,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test saving a new record."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         record = MockRecord(id=1, name="Alice", age=30)
         result = await store.save_record(record)
@@ -257,9 +250,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test saving with explicit record type name."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         record = MockRecord(id=2, name="Bob", age=25)
         result = await store.save_record(record, record_type_name="TestRecord")
@@ -272,9 +263,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test that saving unknown type raises exception."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         from fdb_record_layer.core.exceptions import RecordTypeNotFoundException
 
@@ -289,9 +278,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test loading non-existent record returns None."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         result = await store.load_record("TestRecord", (999,))
         assert result is None
@@ -301,9 +288,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test loading unknown type raises exception."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         from fdb_record_layer.core.exceptions import RecordTypeNotFoundException
 
@@ -315,9 +300,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test deleting non-existent record returns False."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         result = await store.delete_record("TestRecord", (999,))
         assert result is False
@@ -327,9 +310,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test deleting unknown type raises exception."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         from fdb_record_layer.core.exceptions import RecordTypeNotFoundException
 
@@ -341,9 +322,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test record_exists returns False for non-existent records."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         result = await store.record_exists("TestRecord", (999,))
         assert result is False
@@ -353,9 +332,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test batch loading empty list returns empty list."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         result = await store.load_records("TestRecord", [])
         assert result == []
@@ -365,9 +342,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test batch saving empty list returns empty list."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         result = await store.save_records([])
         assert result == []
@@ -377,9 +352,7 @@ class TestFDBRecordStore:
         self, mock_context, mock_subspace, mock_metadata, mock_serializer
     ):
         """Test batch deleting empty list returns 0."""
-        store = self._create_store(
-            mock_context, mock_subspace, mock_metadata, mock_serializer
-        )
+        store = self._create_store(mock_context, mock_subspace, mock_metadata, mock_serializer)
 
         result = await store.delete_records("TestRecord", [])
         assert result == 0
@@ -420,9 +393,7 @@ class TestRetryConfig:
         """Test exponential backoff calculation."""
         from fdb_record_layer.core.context import RetryConfig
 
-        config = RetryConfig(
-            initial_delay_ms=10.0, max_delay_ms=1000.0, backoff_multiplier=2.0
-        )
+        config = RetryConfig(initial_delay_ms=10.0, max_delay_ms=1000.0, backoff_multiplier=2.0)
 
         # Attempt 0: 10ms
         assert config.calculate_delay(0) == pytest.approx(0.01)
@@ -437,9 +408,7 @@ class TestRetryConfig:
         """Test delay is capped at max_delay_ms."""
         from fdb_record_layer.core.context import RetryConfig
 
-        config = RetryConfig(
-            initial_delay_ms=100.0, max_delay_ms=500.0, backoff_multiplier=2.0
-        )
+        config = RetryConfig(initial_delay_ms=100.0, max_delay_ms=500.0, backoff_multiplier=2.0)
 
         # Attempt 10 would be 100 * 2^10 = 102400ms, but capped at 500ms
         assert config.calculate_delay(10) == pytest.approx(0.5)

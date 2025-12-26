@@ -207,9 +207,7 @@ class OnlineIndexBuilder:
 
         while not self._cancelled:
             # Process one batch
-            batch_result = await self._build_batch(
-                index, record_types, continuation
-            )
+            batch_result = await self._build_batch(index, record_types, continuation)
 
             self._progress.batches_completed += 1
             self._progress.records_scanned += batch_result.records_scanned
@@ -281,9 +279,7 @@ class OnlineIndexBuilder:
 
                 # Set continuation for next batch
                 if records:
-                    result.continuation = self._encode_continuation(
-                        records[-1].primary_key
-                    )
+                    result.continuation = self._encode_continuation(records[-1].primary_key)
                     result.has_more = len(records) >= self._config.batch_size
                 else:
                     result.has_more = False
@@ -346,9 +342,7 @@ class OnlineIndexBuilder:
 
         return records
 
-    async def _index_record(
-        self, tr: Any, index: Index, record_info: RecordInfo
-    ) -> None:
+    async def _index_record(self, tr: Any, index: Index, record_info: RecordInfo) -> None:
         """Add a single record to the index."""
         maintainer = self._store._index_maintainers.get(self._index_name)
         if maintainer:
@@ -361,11 +355,13 @@ class OnlineIndexBuilder:
     def _encode_continuation(self, primary_key: tuple) -> bytes:
         """Encode a primary key as continuation."""
         import json
+
         return json.dumps(primary_key).encode("utf-8")
 
     def _decode_continuation(self, continuation: bytes) -> tuple:
         """Decode a continuation to a primary key."""
         import json
+
         return tuple(json.loads(continuation.decode("utf-8")))
 
 

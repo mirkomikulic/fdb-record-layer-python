@@ -135,9 +135,7 @@ class RecordCursor(Generic[T], ABC):
         """
         return FilterCursor(self, predicate)
 
-    def filter_async(
-        self, predicate: Callable[[T], Awaitable[bool]]
-    ) -> AsyncFilterCursor[T]:
+    def filter_async(self, predicate: Callable[[T], Awaitable[bool]]) -> AsyncFilterCursor[T]:
         """Filter results using an async predicate.
 
         Args:
@@ -284,9 +282,7 @@ class FilterCursor(RecordCursor[T]):
 class AsyncFilterCursor(RecordCursor[T]):
     """A cursor that filters results asynchronously."""
 
-    def __init__(
-        self, inner: RecordCursor[T], predicate: Callable[[T], Awaitable[bool]]
-    ) -> None:
+    def __init__(self, inner: RecordCursor[T], predicate: Callable[[T], Awaitable[bool]]) -> None:
         self._inner = inner
         self._predicate = predicate
 

@@ -49,7 +49,7 @@ class RetryConfig:
 
     def calculate_delay(self, attempt: int) -> float:
         """Calculate delay in seconds for a given attempt number."""
-        delay_ms = self.initial_delay_ms * (self.backoff_multiplier ** attempt)
+        delay_ms = self.initial_delay_ms * (self.backoff_multiplier**attempt)
         delay_ms = min(delay_ms, self.max_delay_ms)
         return delay_ms / 1000.0
 
@@ -100,9 +100,7 @@ class FDBRecordContext:
         if self._read_version is None:
             # FDB Python client is synchronous, wrap in executor
             loop = asyncio.get_event_loop()
-            version = await loop.run_in_executor(
-                None, self.transaction.get_read_version().wait
-            )
+            version = await loop.run_in_executor(None, self.transaction.get_read_version().wait)
             self._read_version = int(version)
         return self._read_version
 
@@ -328,9 +326,7 @@ class FDBDatabase:
                 # Use FDB's built-in retry logic to determine if retryable
                 try:
                     loop = asyncio.get_event_loop()
-                    await loop.run_in_executor(
-                        None, ctx.transaction.on_error(e.code).wait
-                    )
+                    await loop.run_in_executor(None, ctx.transaction.on_error(e.code).wait)
                 except fdb.FDBError:
                     # Not retryable
                     raise TransactionConflictError(f"FDB error {e.code}: {e}") from e
@@ -368,6 +364,4 @@ class FDBDatabase:
         Returns:
             The result of the function.
         """
-        return asyncio.get_event_loop().run_until_complete(
-            self.run(func, retry_config)
-        )
+        return asyncio.get_event_loop().run_until_complete(self.run(func, retry_config))

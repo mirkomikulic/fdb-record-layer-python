@@ -187,9 +187,7 @@ class MetaDataEvolutionValidator:
             requires_rebuild=requires_rebuild,
         )
 
-    def _validate_version(
-        self, old: RecordMetaData, new: RecordMetaData
-    ) -> list[EvolutionIssue]:
+    def _validate_version(self, old: RecordMetaData, new: RecordMetaData) -> list[EvolutionIssue]:
         """Validate version changes."""
         issues = []
 
@@ -268,9 +266,7 @@ class MetaDataEvolutionValidator:
         common = old_types & new_types
         for name in common:
             issues.extend(
-                self._validate_record_type_change(
-                    old.record_types[name], new.record_types[name]
-                )
+                self._validate_record_type_change(old.record_types[name], new.record_types[name])
             )
 
         return issues
@@ -304,9 +300,7 @@ class MetaDataEvolutionValidator:
 
         # Check fields (if descriptors are available)
         if old_type.descriptor and new_type.descriptor:
-            issues.extend(
-                self._validate_field_changes(old_type, new_type)
-            )
+            issues.extend(self._validate_field_changes(old_type, new_type))
 
         return issues
 
@@ -323,9 +317,7 @@ class MetaDataEvolutionValidator:
         # Check removed fields
         for field_name in set(old_fields.keys()) - set(new_fields.keys()):
             severity = (
-                EvolutionSeverity.WARNING
-                if self._allow_field_removal
-                else EvolutionSeverity.ERROR
+                EvolutionSeverity.WARNING if self._allow_field_removal else EvolutionSeverity.ERROR
             )
             issues.append(
                 EvolutionIssue(
@@ -341,8 +333,7 @@ class MetaDataEvolutionValidator:
             new_field = new_fields[field_name]
             # Check if required (proto3 doesn't have required, but proto2 does)
             is_required = (
-                hasattr(new_field, "label")
-                and new_field.label == 2  # LABEL_REQUIRED
+                hasattr(new_field, "label") and new_field.label == 2  # LABEL_REQUIRED
             )
             severity = EvolutionSeverity.ERROR if is_required else EvolutionSeverity.INFO
             issues.append(

@@ -133,9 +133,7 @@ class StructuredFormatter(logging.Formatter):
 
         if self._include_extra:
             extra_fields = {
-                k: v
-                for k, v in record.__dict__.items()
-                if k not in self._standard_attrs
+                k: v for k, v in record.__dict__.items() if k not in self._standard_attrs
             }
             if extra_fields:
                 extra_str = " ".join(f"{k}={v}" for k, v in extra_fields.items())
@@ -167,9 +165,7 @@ def configure_logging(
     if structured:
         formatter = StructuredFormatter()
     else:
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     handler.setFormatter(formatter)
     _root_logger.addHandler(handler)

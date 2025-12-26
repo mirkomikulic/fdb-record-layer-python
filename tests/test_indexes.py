@@ -2,10 +2,10 @@
 
 import struct
 from unittest.mock import MagicMock
+
 import pytest
 
 # Ensure FDB is mocked before imports
-from tests.conftest import _mock_fdb
 
 
 class MockValue:
@@ -46,11 +46,7 @@ class MockTransaction:
 
     def get_range(self, start: bytes, end: bytes, limit: int = 0):
         """Return items in the range."""
-        items = [
-            (k, v)
-            for k, v in sorted(self._data.items())
-            if start <= k < end
-        ]
+        items = [(k, v) for k, v in sorted(self._data.items()) if start <= k < end]
         if limit:
             items = items[:limit]
         return items
@@ -75,13 +71,22 @@ class MockSubspace:
     def unpack(self, key: bytes) -> tuple:
         key_str = key.decode()
         prefix_str = str(self._prefix)
-        return eval(key_str[len(prefix_str):])
+        return eval(key_str[len(prefix_str) :])
 
     def range(self):
         """Return range boundaries."""
         mock_range = MagicMock()
-        mock_range.start = str(self._prefix).encode() + b"\x00"
-        mock_range.stop = str(self._prefix).encode() + b"\xff"
+        # Use the string representation with comma to ensure packed keys fall within range
+        prefix_str = str(self._prefix)
+        # Remove closing paren and add comma to match key format
+        if prefix_str.endswith(",)"):
+            prefix_base = prefix_str[:-1]  # Remove just the ')'
+        elif prefix_str.endswith(")"):
+            prefix_base = prefix_str[:-1] + ", "  # Remove ')' add ', '
+        else:
+            prefix_base = prefix_str
+        mock_range.start = prefix_base.encode() + b"\x00"
+        mock_range.stop = prefix_base.encode() + b"\xff"
         return mock_range
 
 
@@ -127,10 +132,19 @@ class MockMetaData:
         return name in self._record_types
 
 
+class MockDescriptor:
+    """Mock protobuf descriptor for testing."""
+
+    def __init__(self, name: str = "MockRecord"):
+        self.name = name
+
+
 class MockRecord:
     """Mock protobuf message for testing."""
 
     def __init__(self, **kwargs):
+        record_type = kwargs.pop("_type", "MockRecord")
+        self.DESCRIPTOR = MockDescriptor(record_type)
         for k, v in kwargs.items():
             setattr(self, k, v)
 
@@ -307,7 +321,9 @@ class TestMinMaxIndexMaintainer:
         metadata = MockMetaData()
 
         return MinMaxIndexMaintainer(
-            index, subspace, metadata,
+            index,
+            subspace,
+            metadata,
             track_max=track_max,
             value_field=value_field,
         )
@@ -505,6 +521,7 @@ class TestOnlineIndexBuilder:
     def test_build_progress_duration(self):
         """Test BuildProgress duration calculation."""
         import time
+
         from fdb_record_layer.indexes.builder import BuildProgress
 
         progress = BuildProgress(index_name="test")
@@ -516,6 +533,7 @@ class TestOnlineIndexBuilder:
     def test_build_progress_rate(self):
         """Test BuildProgress rate calculation."""
         import time
+
         from fdb_record_layer.indexes.builder import BuildProgress
 
         progress = BuildProgress(index_name="test")
@@ -594,9 +612,7 @@ class TestIndexStateManager:
 
         manager.set_state("test_index", IndexState.DISABLED)
 
-        mock_store.set_index_state.assert_called_once_with(
-            "test_index", IndexState.DISABLED
-        )
+        mock_store.set_index_state.assert_called_once_with("test_index", IndexState.DISABLED)
 
     def test_is_readable(self):
         """Test is_readable check."""

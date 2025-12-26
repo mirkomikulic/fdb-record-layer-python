@@ -112,9 +112,7 @@ class HeuristicPlanner(RecordQueryPlanner):
         plan = self._plan_filter(filter_component, available_indexes, record_types)
 
         # Add record type filter if needed
-        if len(record_types) > 0 and len(record_types) < len(
-            self._meta_data.record_types
-        ):
+        if len(record_types) > 0 and len(record_types) < len(self._meta_data.record_types):
             plan = RecordTypeFilterPlan(plan, record_types)
 
         return plan
@@ -215,9 +213,7 @@ class HeuristicPlanner(RecordQueryPlanner):
 
         if best_index is not None:
             # Use index scan
-            plan: RecordQueryPlan[Any] = IndexScanPlan(
-                best_index.name, best_comparisons
-            )
+            plan: RecordQueryPlan[Any] = IndexScanPlan(best_index.name, best_comparisons)
 
             # Add residual filter if needed
             all_residual = residual_predicates + other_predicates
@@ -458,9 +454,7 @@ class HeuristicPlanner(RecordQueryPlanner):
             return TypeScanPlan(record_types[0])
         return ScanPlan(record_types)
 
-    def _combine_predicates(
-        self, predicates: list[QueryComponent]
-    ) -> QueryComponent:
+    def _combine_predicates(self, predicates: list[QueryComponent]) -> QueryComponent:
         """Combine multiple predicates with AND.
 
         Args:

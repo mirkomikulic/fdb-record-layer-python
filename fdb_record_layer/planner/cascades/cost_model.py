@@ -139,9 +139,7 @@ class CostModel(ABC):
         pass
 
     @abstractmethod
-    def estimate_cardinality(
-        self, expression: GroupExpression, input_stats: Statistics
-    ) -> float:
+    def estimate_cardinality(self, expression: GroupExpression, input_stats: Statistics) -> float:
         """Estimate the output cardinality of an expression.
 
         Args:
@@ -252,9 +250,7 @@ class DefaultCostModel(CostModel):
 
         return cost
 
-    def _cost_filter(
-        self, expr: Any, child_costs: list[Cost], stats: Statistics
-    ) -> Cost:
+    def _cost_filter(self, expr: Any, child_costs: list[Cost], stats: Statistics) -> Cost:
         """Cost of applying a filter."""
         base_cost = child_costs[0] if child_costs else Cost()
 
@@ -264,9 +260,7 @@ class DefaultCostModel(CostModel):
 
         return base_cost + filter_cost
 
-    def _cost_sort(
-        self, expr: Any, child_costs: list[Cost], stats: Statistics
-    ) -> Cost:
+    def _cost_sort(self, expr: Any, child_costs: list[Cost], stats: Statistics) -> Cost:
         """Cost of sorting."""
         base_cost = child_costs[0] if child_costs else Cost()
 
@@ -283,9 +277,7 @@ class DefaultCostModel(CostModel):
 
         return base_cost + sort_cost
 
-    def _cost_union(
-        self, expr: Any, child_costs: list[Cost], stats: Statistics
-    ) -> Cost:
+    def _cost_union(self, expr: Any, child_costs: list[Cost], stats: Statistics) -> Cost:
         """Cost of union operation."""
         # Sum of child costs plus merge overhead
         base_cost = sum(child_costs, Cost())
@@ -295,9 +287,7 @@ class DefaultCostModel(CostModel):
 
         return base_cost + union_cost
 
-    def _cost_intersection(
-        self, expr: Any, child_costs: list[Cost], stats: Statistics
-    ) -> Cost:
+    def _cost_intersection(self, expr: Any, child_costs: list[Cost], stats: Statistics) -> Cost:
         """Cost of intersection operation."""
         base_cost = sum(child_costs, Cost())
 
@@ -356,9 +346,7 @@ class DefaultCostModel(CostModel):
             # Unknown predicate - default selectivity
             return 0.5
 
-    def estimate_cardinality(
-        self, expression: GroupExpression, input_stats: Statistics
-    ) -> float:
+    def estimate_cardinality(self, expression: GroupExpression, input_stats: Statistics) -> float:
         """Estimate output cardinality."""
         from fdb_record_layer.planner.cascades.expressions import (
             PhysicalFilter,
