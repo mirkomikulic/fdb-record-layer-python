@@ -121,9 +121,9 @@ jobs:
 
       - name: Install FDB client library
         run: |
-          # Download and install FDB client library (7.3.x for API version 730 compatibility)
-          wget https://github.com/apple/foundationdb/releases/download/7.3.43/foundationdb-clients_7.3.43-1_amd64.deb
-          sudo dpkg -i foundationdb-clients_7.3.43-1_amd64.deb
+          # Download and install FDB client library (7.4.x for API version 740 support)
+          wget https://github.com/apple/foundationdb/releases/download/7.4.5/foundationdb-clients_7.4.5-1_amd64.deb
+          sudo dpkg -i foundationdb-clients_7.4.5-1_amd64.deb
 
       - name: Install dependencies
         run: |
@@ -149,7 +149,7 @@ jobs:
             -e FDB_COORDINATOR_PORT=4500 \
             -e FDB_PORT=4500 \
             -v $(pwd)/fdb.cluster:/var/fdb/fdb.cluster \
-            foundationdb/foundationdb:7.3.43
+            foundationdb/foundationdb:7.4.5
 
       - name: Wait for FDB and configure
         run: |

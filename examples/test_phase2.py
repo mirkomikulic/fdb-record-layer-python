@@ -20,7 +20,7 @@ def main():
     """Run Phase 2 tests."""
     import fdb
 
-    fdb.api_version(730)
+    fdb.api_version(740)
 
     # Import our library
     import fdb_record_layer as frl

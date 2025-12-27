@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 # Initialize FDB API version
-fdb.api_version(730)
+fdb.api_version(740)
 
 
 @dataclass

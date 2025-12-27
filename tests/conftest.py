@@ -18,7 +18,7 @@ def _check_fdb_available() -> bool:
         import fdb
 
         # This will raise if the native library is missing
-        fdb.api_version(730)
+        fdb.api_version(740)
         return True
     except Exception:
         return False

@@ -16,7 +16,7 @@ os.environ["FDB_CLUSTER_FILE"] = os.path.expanduser("~/.fdb/conf/fdb.cluster")
 def main():
     """Run Phase 3 tests."""
     import fdb
-    fdb.api_version(730)
+    fdb.api_version(740)
 
     import fdb_record_layer as frl
     from fdb_record_layer.metadata.index import IndexType
