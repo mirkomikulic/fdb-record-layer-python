@@ -25,7 +25,7 @@ Example:
     ...     await store.save_record(person)
 """
 
-__version__ = "0.1.0-beta.3"
+__version__ = "0.1.0-beta.4"
 
 # Tracking for optional dependencies
 _HAS_FDB = False
