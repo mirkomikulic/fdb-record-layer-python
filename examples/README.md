@@ -192,6 +192,29 @@ The `comprehensive_example.py` demonstrates all features in an e-commerce scenar
 | Continuations | Cursor-based pagination |
 | Production Utils | Pooling, circuit breakers, metrics, health |
 
+### Java Interoperability
+
+Use `JavaCompatibleStore` to read/write data compatible with the Java Record Layer:
+
+```python
+from fdb_record_layer import JavaCompatibleStore, FDBRecordVersion
+
+# Use Java-compatible storage format
+store = JavaCompatibleStore(ctx, subspace, metadata)
+
+# Save with version tracking (optimistic locking)
+version = FDBRecordVersion.incomplete()
+await store.save_record(person, version=version)
+
+# Records can now be read by Java applications!
+```
+
+Key compatibility features:
+- **Same subspace layout** (keyspace constants 0-9)
+- **Record splitting** for large records (>100KB)
+- **Record versioning** via FDB versionstamps
+- **Store header** with format version
+
 ### Not Yet Implemented (from Java)
 
 | Feature | Description | Priority |
@@ -200,7 +223,6 @@ The `comprehensive_example.py` demonstrates all features in an e-commerce scenar
 | Bitmap Indexes | Efficient for low-cardinality fields | Medium |
 | Geospatial Indexes | R-tree based location queries | Medium |
 | Synthetic Records | Virtual records joining multiple types | Medium |
-| Record Versioning | Optimistic locking with version tracking | Low |
 | Atomic Mutations | Increment/append operations | Low |
 | Store State | Empty/readable state tracking | Low |
 | Key Space Paths | Hierarchical key organization | Low |

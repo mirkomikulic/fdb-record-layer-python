@@ -25,7 +25,7 @@ Example:
     ...     await store.save_record(person)
 """
 
-__version__ = "0.1.0-beta.5"
+__version__ = "0.1.0-beta.6"
 
 # Tracking for optional dependencies
 _HAS_FDB = False
@@ -181,6 +181,33 @@ from fdb_record_layer.utils.logging import (
     log_timing,
 )
 
+# Java compatibility (no FDB required for imports)
+from fdb_record_layer.compat.keyspace import (
+    FDBRecordStoreKeyspace,
+    STORE_INFO_KEY,
+    RECORD_KEY,
+    INDEX_KEY,
+)
+from fdb_record_layer.compat.split import (
+    SplitHelper,
+    SPLIT_RECORD_SIZE,
+    UNSPLIT_RECORD,
+)
+from fdb_record_layer.compat.store_header import (
+    StoreHeader,
+    FormatVersion,
+)
+
+# Java-compatible store (requires FDB)
+try:
+    from fdb_record_layer.compat.java_store import (
+        JavaCompatibleStore,
+        FDBRecordVersion,
+    )
+except ImportError:
+    JavaCompatibleStore = None  # type: ignore
+    FDBRecordVersion = None  # type: ignore
+
 __all__ = [
     # Version
     "__version__",
@@ -292,4 +319,16 @@ __all__ = [
     "get_logger",
     "log_operation",
     "log_timing",
+    # Java compatibility
+    "JavaCompatibleStore",
+    "FDBRecordVersion",
+    "FDBRecordStoreKeyspace",
+    "STORE_INFO_KEY",
+    "RECORD_KEY",
+    "INDEX_KEY",
+    "SplitHelper",
+    "SPLIT_RECORD_SIZE",
+    "UNSPLIT_RECORD",
+    "StoreHeader",
+    "FormatVersion",
 ]
