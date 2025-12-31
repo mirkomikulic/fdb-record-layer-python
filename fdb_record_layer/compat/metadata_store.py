@@ -56,11 +56,11 @@ def key_expression_to_proto(expr: KeyExpression) -> KeyExpressionProto:
         field_proto = FieldProto()
         field_proto.field_name = expr.field_name
         # Map fan type
-        fan_type = getattr(expr, 'fan_type', None)
+        fan_type = getattr(expr, "fan_type", None)
         if fan_type:
-            if fan_type.name == 'FAN_OUT':
+            if fan_type.name == "FAN_OUT":
                 field_proto.fan_type = FanType.FAN_OUT
-            elif fan_type.name == 'CONCATENATE':
+            elif fan_type.name == "CONCATENATE":
                 field_proto.fan_type = FanType.CONCATENATE
             else:
                 field_proto.fan_type = FanType.SCALAR
@@ -89,9 +89,9 @@ def proto_to_key_expression(proto: KeyExpressionProto) -> KeyExpression:
     """Convert a protobuf KeyExpression to our format."""
     from fdb_record_layer.expressions.base import FanType as OurFanType
 
-    which = proto.WhichOneof('expression')
+    which = proto.WhichOneof("expression")
 
-    if which == 'field':
+    if which == "field":
         field = proto.field
         fan_type = OurFanType.NONE
         if field.fan_type == FanType.FAN_OUT:
@@ -100,27 +100,30 @@ def proto_to_key_expression(proto: KeyExpressionProto) -> KeyExpression:
             fan_type = OurFanType.CONCATENATE
         return FieldKeyExpression(field.field_name, fan_type)
 
-    elif which == 'then':
+    elif which == "then":
         children = [proto_to_key_expression(c) for c in proto.then.children]
         return ConcatenateKeyExpression(children)
 
-    elif which == 'nesting':
+    elif which == "nesting":
         child = None
-        if proto.nesting.HasField('child'):
+        if proto.nesting.HasField("child"):
             child = proto_to_key_expression(proto.nesting.child)
-        return NestKeyExpression(proto.nesting.parent, child)
+        return NestKeyExpression(proto.nesting.parent, child)  # type: ignore[arg-type]
 
-    elif which == 'empty':
+    elif which == "empty":
         from fdb_record_layer.expressions.base import EmptyKeyExpression
+
         return EmptyKeyExpression()
 
-    elif which == 'record_type_key':
+    elif which == "record_type_key":
         from fdb_record_layer.expressions.record_type import RecordTypeKeyExpression
+
         return RecordTypeKeyExpression()
 
     else:
         # Default to empty
         from fdb_record_layer.expressions.base import EmptyKeyExpression
+
         return EmptyKeyExpression()
 
 
@@ -182,7 +185,7 @@ class JavaCompatibleMetaDataStore:
             rt_proto.name = rt.name
             if rt.primary_key:
                 rt_proto.primary_key.CopyFrom(key_expression_to_proto(rt.primary_key))
-            if hasattr(rt, 'since_version') and rt.since_version:
+            if hasattr(rt, "since_version") and rt.since_version:
                 rt_proto.since_version = rt.since_version
 
         # Indexes with subspace key assignment
@@ -192,52 +195,51 @@ class JavaCompatibleMetaDataStore:
             idx_proto.type = index_type_to_string(index.index_type)
 
             # Record types
-            for rt_name in index.record_types:
-                idx_proto.record_type.append(rt_name)
+            if index.record_types:
+                for rt_name in index.record_types:
+                    idx_proto.record_type.append(rt_name)
 
             # Root expression
             if index.root_expression:
-                idx_proto.root_expression.CopyFrom(
-                    key_expression_to_proto(index.root_expression)
-                )
+                idx_proto.root_expression.CopyFrom(key_expression_to_proto(index.root_expression))
 
             # Subspace key - use existing or assign new
-            if hasattr(index, 'subspace_key') and index.subspace_key is not None:
+            if hasattr(index, "subspace_key") and index.subspace_key is not None:
                 if isinstance(index.subspace_key, int):
-                    idx_proto.subspace_key = struct.pack('>q', index.subspace_key)
+                    idx_proto.subspace_key = struct.pack(">q", index.subspace_key)
                 elif isinstance(index.subspace_key, bytes):
                     idx_proto.subspace_key = index.subspace_key
                 else:
                     # Generate from name hash
-                    idx_proto.subspace_key = struct.pack('>q', self._next_subspace_key())
+                    idx_proto.subspace_key = struct.pack(">q", self._next_subspace_key())
             else:
-                idx_proto.subspace_key = struct.pack('>q', self._next_subspace_key())
+                idx_proto.subspace_key = struct.pack(">q", self._next_subspace_key())
 
             # Version info
-            if hasattr(index, 'added_version') and index.added_version:
+            if hasattr(index, "added_version") and index.added_version:
                 idx_proto.added_version = index.added_version
-            if hasattr(index, 'last_modified_version') and index.last_modified_version:
+            if hasattr(index, "last_modified_version") and index.last_modified_version:
                 idx_proto.last_modified_version = index.last_modified_version
 
         # Former indexes
-        if hasattr(metadata, 'former_indexes'):
+        if hasattr(metadata, "former_indexes"):
             for former in metadata.former_indexes:
                 former_proto = proto.former_indexes.add()
-                if hasattr(former, 'subspace_key'):
+                if hasattr(former, "subspace_key"):
                     if isinstance(former.subspace_key, int):
-                        former_proto.subspace_key = struct.pack('>q', former.subspace_key)
+                        former_proto.subspace_key = struct.pack(">q", former.subspace_key)
                     else:
                         former_proto.subspace_key = former.subspace_key
-                if hasattr(former, 'former_name'):
+                if hasattr(former, "former_name"):
                     former_proto.former_name = former.former_name
-                if hasattr(former, 'added_version'):
+                if hasattr(former, "added_version"):
                     former_proto.added_version = former.added_version
-                if hasattr(former, 'removed_version'):
+                if hasattr(former, "removed_version"):
                     former_proto.removed_version = former.removed_version
 
         # Settings
-        proto.split_long_records = getattr(metadata, 'split_long_records', True)
-        proto.store_record_versions = getattr(metadata, 'store_record_versions', True)
+        proto.split_long_records = getattr(metadata, "split_long_records", True)
+        proto.store_record_versions = getattr(metadata, "store_record_versions", True)
         proto.subspace_key_counter = self._subspace_key_counter
         proto.uses_subspace_key_counter = True
 
@@ -253,13 +255,13 @@ class JavaCompatibleMetaDataStore:
         # Record types
         for rt_proto in proto.record_types:
             primary_key = None
-            if rt_proto.HasField('primary_key'):
+            if rt_proto.HasField("primary_key"):
                 primary_key = proto_to_key_expression(rt_proto.primary_key)
 
             rt = RecordType(
                 name=rt_proto.name,
-                descriptor=None,  # Will be set from file_descriptor if available
-                primary_key=primary_key,
+                descriptor=None,  # type: ignore[arg-type]  # Will be set from file_descriptor if available
+                primary_key=primary_key,  # type: ignore[arg-type]
             )
             if rt_proto.since_version:
                 rt.since_version = rt_proto.since_version
@@ -268,20 +270,20 @@ class JavaCompatibleMetaDataStore:
         # Indexes
         for idx_proto in proto.indexes:
             root_expr = None
-            if idx_proto.HasField('root_expression'):
+            if idx_proto.HasField("root_expression"):
                 root_expr = proto_to_key_expression(idx_proto.root_expression)
 
             # Parse subspace key
             subspace_key = None
             if idx_proto.subspace_key:
                 if len(idx_proto.subspace_key) == 8:
-                    subspace_key = struct.unpack('>q', idx_proto.subspace_key)[0]
+                    subspace_key = struct.unpack(">q", idx_proto.subspace_key)[0]
                 else:
                     subspace_key = idx_proto.subspace_key
 
             index = Index(
                 name=idx_proto.name,
-                root_expression=root_expr,
+                root_expression=root_expr,  # type: ignore[arg-type]
                 index_type=string_to_index_type(idx_proto.type),
                 record_types=list(idx_proto.record_type),
             )
@@ -341,7 +343,7 @@ def assign_subspace_keys(metadata: RecordMetaData) -> RecordMetaData:
     counter = 0
 
     for index in metadata.indexes.values():
-        if not hasattr(index, 'subspace_key') or index.subspace_key is None:
+        if not hasattr(index, "subspace_key") or index.subspace_key is None:
             index.subspace_key = counter
             counter += 1
 

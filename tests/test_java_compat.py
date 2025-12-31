@@ -87,7 +87,7 @@ class MockSubspace:
         # Return empty tuple if key doesn't start with prefix
         if not key.startswith(self._prefix):
             return ()
-        suffix = key[len(self._prefix):]
+        suffix = key[len(self._prefix) :]
         # Extract integer if present
         if suffix and suffix[0:1] == b"\x15":
             return (suffix[1],)
@@ -681,10 +681,12 @@ class TestMetadataStore:
         from fdb_record_layer.expressions.concat import ConcatenateKeyExpression
         from fdb_record_layer.expressions.field import FieldKeyExpression
 
-        expr = ConcatenateKeyExpression([
-            FieldKeyExpression("first"),
-            FieldKeyExpression("second"),
-        ])
+        expr = ConcatenateKeyExpression(
+            [
+                FieldKeyExpression("first"),
+                FieldKeyExpression("second"),
+            ]
+        )
         proto = key_expression_to_proto(expr)
 
         assert proto.HasField("then")

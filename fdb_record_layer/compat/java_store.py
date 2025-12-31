@@ -81,10 +81,7 @@ class FDBRecordVersion:
 
     def to_bytes(self) -> bytes:
         """Serialize to 10 bytes."""
-        return (
-            self.global_version.to_bytes(8, "big")
-            + self.local_version.to_bytes(2, "big")
-        )
+        return self.global_version.to_bytes(8, "big") + self.local_version.to_bytes(2, "big")
 
     @classmethod
     def from_bytes(cls, data: bytes) -> FDBRecordVersion:
@@ -351,7 +348,7 @@ class JavaCompatibleStore(Generic[M]):
             return None
 
         # Deserialize
-        record = self._serializer.deserialize(record_bytes, record_type)
+        record = self._serializer.deserialize(record_bytes, record_type)  # type: ignore[arg-type]
 
         # Load version if available
         version_bytes = await SplitHelper.load_version(
@@ -373,13 +370,13 @@ class JavaCompatibleStore(Generic[M]):
             },
         )
 
-        stored = FDBStoredRecord(
+        stored: FDBStoredRecord[M] = FDBStoredRecord(
             primary_key=primary_key,
-            record=record,
+            record=record,  # type: ignore[arg-type]
             record_type=record_type,
         )
         # Attach version as attribute
-        stored._version = version  # type: ignore
+        stored._version = version  # type: ignore[attr-defined]
         return stored
 
     async def delete_record(
@@ -475,7 +472,7 @@ class JavaCompatibleStore(Generic[M]):
 
         maintainer = self._index_maintainers[index_name]
 
-        async def load_record(pk: tuple, rt_name: str) -> FDBStoredRecord | None:
+        async def load_record(rt_name: str, pk: tuple) -> FDBStoredRecord | None:
             return await self.load_record(rt_name, pk)
 
         return await maintainer.scan(
@@ -483,7 +480,7 @@ class JavaCompatibleStore(Generic[M]):
             scan_range,
             continuation,
             limit if limit > 0 else 10000,
-            load_record,
+            load_record,  # type: ignore[arg-type]
         )
 
     # =========================================================================
@@ -505,7 +502,7 @@ class JavaCompatibleStore(Generic[M]):
         # For now, use first registered type
         for record_type in self._meta_data.record_types.values():
             try:
-                return self._serializer.deserialize(record_bytes, record_type)
+                return self._serializer.deserialize(record_bytes, record_type)  # type: ignore[return-value, arg-type]
             except Exception:
                 continue
 
@@ -520,7 +517,7 @@ class JavaCompatibleStore(Generic[M]):
     ) -> None:
         """Update all applicable indexes."""
         for index in self._meta_data.indexes.values():
-            if record_type.name not in index.record_types:
+            if not index.record_types or record_type.name not in index.record_types:
                 continue
 
             maintainer = self._index_maintainers[index.name]
@@ -540,7 +537,7 @@ class JavaCompatibleStore(Generic[M]):
     ) -> None:
         """Remove record from all applicable indexes."""
         for index in self._meta_data.indexes.values():
-            if record_type.name not in index.record_types:
+            if not index.record_types or record_type.name not in index.record_types:
                 continue
 
             maintainer = self._index_maintainers[index.name]

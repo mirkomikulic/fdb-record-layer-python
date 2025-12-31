@@ -81,6 +81,10 @@ ignore_missing_imports = true
 module = ["lark", "lark.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["fdb_record_layer.compat.proto.*"]
+ignore_errors = true
+
 [tool.ruff]
 target-version = "py310"
 line-length = 100
