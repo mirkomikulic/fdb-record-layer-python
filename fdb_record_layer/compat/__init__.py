@@ -9,6 +9,7 @@ Key components:
 - RecordSplitter: Handle large records (>100KB)
 - StoreHeader: DataStoreInfo proto handling
 - JavaCompatibleStore: Drop-in replacement for FDBRecordStore
+- JavaCompatibleMetaDataStore: Protobuf-based metadata storage
 """
 
 from fdb_record_layer.compat.keyspace import (
@@ -36,6 +37,15 @@ from fdb_record_layer.compat.split import (
 from fdb_record_layer.compat.store_header import (
     StoreHeader,
     FormatVersion,
+    RecordCountState,
+    StoreLockState,
+)
+
+from fdb_record_layer.compat.metadata_store import (
+    JavaCompatibleMetaDataStore,
+    key_expression_to_proto,
+    proto_to_key_expression,
+    assign_subspace_keys,
 )
 
 __all__ = [
@@ -60,4 +70,11 @@ __all__ = [
     # Store Header
     "StoreHeader",
     "FormatVersion",
+    "RecordCountState",
+    "StoreLockState",
+    # Metadata Store
+    "JavaCompatibleMetaDataStore",
+    "key_expression_to_proto",
+    "proto_to_key_expression",
+    "assign_subspace_keys",
 ]

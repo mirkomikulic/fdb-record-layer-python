@@ -3,15 +3,22 @@
 The Java Record Layer stores a header at STORE_INFO containing format
 version, metadata version, and other store-level configuration.
 
+This uses the actual protobuf definition for full Java compatibility.
+
 See: RecordMetaDataProto.DataStoreInfo
 """
 
 from __future__ import annotations
 
-import struct
 from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any
+
+from fdb_record_layer.compat.proto import (
+    DataStoreInfo as DataStoreInfoProto,
+    RecordCountState as RecordCountStateProto,
+    StoreLockState as StoreLockStateProto,
+)
 
 if TYPE_CHECKING:
     from fdb import Transaction
@@ -43,17 +50,17 @@ class FormatVersion(IntEnum):
 class RecordCountState(IntEnum):
     """State of record count tracking."""
 
-    READABLE = 0
-    WRITE_ONLY = 1
-    DISABLED = 2
+    READABLE = 1
+    WRITE_ONLY = 2
+    DISABLED = 3
 
 
 class StoreLockState(IntEnum):
     """Lock state preventing modifications."""
 
-    UNLOCKED = 0
-    READ_ONLY = 1
-    LOCKED = 2
+    UNLOCKED = 1
+    READ_ONLY = 2
+    LOCKED = 3
 
 
 @dataclass
@@ -61,6 +68,7 @@ class StoreHeader:
     """Store header matching Java DataStoreInfo proto.
 
     This is stored at STORE_INFO key and contains store-level metadata.
+    Uses proper protobuf serialization for Java compatibility.
     """
 
     # Format version (controls storage format behaviors)
@@ -90,66 +98,72 @@ class StoreHeader:
     # User-defined fields (key-value pairs)
     user_fields: dict[str, bytes] = field(default_factory=dict)
 
-    def to_bytes(self) -> bytes:
-        """Serialize to bytes (simplified format, not proto-compatible yet).
+    def to_proto(self) -> DataStoreInfoProto:
+        """Convert to protobuf message."""
+        proto = DataStoreInfoProto()
+        proto.format_version = self.format_version
+        proto.meta_data_version = self.meta_data_version
+        proto.user_version = self.user_version
+        proto.omit_unsplit_record_suffix = self.omit_unsplit_record_suffix
+        proto.cacheable = self.cacheable
+        proto.last_update_time = self.last_update_time
 
-        For full Java compatibility, this should use the actual protobuf
-        definition from record_metadata.proto.
-        """
-        # Simple binary format for now
-        # TODO: Use actual protobuf for full compatibility
-        flags = 0
-        if self.omit_unsplit_record_suffix:
-            flags |= 1
-        if self.cacheable:
-            flags |= 2
+        if self.record_count_state:
+            proto.record_count_state = self.record_count_state
 
-        return struct.pack(
-            "<IIIIBBBI",
-            self.format_version,
-            self.meta_data_version,
-            self.user_version,
-            flags,
-            self.record_count_state,
-            self.store_lock_state,
-            0,  # reserved
-            self.last_update_time,
+        if self.store_lock_state:
+            proto.store_lock_state = self.store_lock_state
+
+        for key, value in self.user_fields.items():
+            entry = proto.user_field.add()
+            entry.key = key
+            entry.value = value
+
+        return proto
+
+    @classmethod
+    def from_proto(cls, proto: DataStoreInfoProto) -> StoreHeader:
+        """Create from protobuf message."""
+        user_fields = {}
+        for entry in proto.user_field:
+            user_fields[entry.key] = entry.value
+
+        record_count_state = RecordCountState.READABLE
+        if proto.record_count_state:
+            record_count_state = RecordCountState(proto.record_count_state)
+
+        store_lock_state = StoreLockState.UNLOCKED
+        if proto.store_lock_state:
+            store_lock_state = StoreLockState(proto.store_lock_state)
+
+        return cls(
+            format_version=proto.format_version,
+            meta_data_version=proto.meta_data_version,
+            user_version=proto.user_version,
+            omit_unsplit_record_suffix=proto.omit_unsplit_record_suffix,
+            cacheable=proto.cacheable,
+            record_count_state=record_count_state,
+            store_lock_state=store_lock_state,
+            last_update_time=proto.last_update_time,
+            user_fields=user_fields,
         )
+
+    def to_bytes(self) -> bytes:
+        """Serialize to bytes using protobuf (Java compatible)."""
+        return self.to_proto().SerializeToString()
 
     @classmethod
     def from_bytes(cls, data: bytes) -> StoreHeader:
-        """Deserialize from bytes."""
-        if len(data) < 24:
-            # Minimal header
-            return cls()
-
-        (
-            format_version,
-            meta_data_version,
-            user_version,
-            flags,
-            record_count_state,
-            store_lock_state,
-            _reserved,
-            last_update_time,
-        ) = struct.unpack("<IIIIBBBI", data[:24])
-
-        return cls(
-            format_version=format_version,
-            meta_data_version=meta_data_version,
-            user_version=user_version,
-            omit_unsplit_record_suffix=bool(flags & 1),
-            cacheable=bool(flags & 2),
-            record_count_state=RecordCountState(record_count_state),
-            store_lock_state=StoreLockState(store_lock_state),
-            last_update_time=last_update_time,
-        )
+        """Deserialize from bytes using protobuf."""
+        proto = DataStoreInfoProto()
+        proto.ParseFromString(data)
+        return cls.from_proto(proto)
 
     def save(self, tr: Transaction, subspace: Subspace) -> None:
         """Save header to store."""
         from fdb_record_layer.compat.keyspace import STORE_INFO_KEY
 
-        key = subspace.pack((STORE_INFO_KEY,))
+        key = subspace.pack((int(STORE_INFO_KEY),))
         tr.set(key, self.to_bytes())
 
     @classmethod
@@ -159,7 +173,7 @@ class StoreHeader:
 
         from fdb_record_layer.compat.keyspace import STORE_INFO_KEY
 
-        key = subspace.pack((STORE_INFO_KEY,))
+        key = subspace.pack((int(STORE_INFO_KEY),))
 
         loop = asyncio.get_event_loop()
         value = await loop.run_in_executor(None, lambda: tr[key])

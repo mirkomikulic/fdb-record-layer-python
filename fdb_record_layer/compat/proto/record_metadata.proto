@@ -1,0 +1,265 @@
+// Java Record Layer compatible metadata proto definitions
+// Based on: github.com/FoundationDB/fdb-record-layer/blob/main/fdb-record-layer-core/src/main/proto/record_metadata.proto
+
+syntax = "proto3";
+
+package com.apple.foundationdb.record;
+
+option java_package = "com.apple.foundationdb.record";
+option java_outer_classname = "RecordMetaDataProto";
+
+// Key expression for indexing and primary keys
+message KeyExpression {
+    oneof expression {
+        Then then = 1;
+        Nesting nesting = 2;
+        Field field = 3;
+        Empty empty = 5;
+        Value value = 8;
+        RecordTypeKey record_type_key = 11;
+        List list = 12;
+    }
+}
+
+// Sequential composition of expressions
+message Then {
+    repeated KeyExpression children = 1;
+}
+
+// Nested field access
+message Nesting {
+    string parent = 1;
+    KeyExpression child = 2;
+}
+
+// Field reference
+message Field {
+    string field_name = 1;
+    FanType fan_type = 2;
+    NullInterpretation null_interpretation = 3;
+}
+
+enum FanType {
+    FAN_TYPE_UNSPECIFIED = 0;
+    SCALAR = 1;
+    FAN_OUT = 2;
+    CONCATENATE = 3;
+}
+
+enum NullInterpretation {
+    NULL_INTERPRETATION_UNSPECIFIED = 0;
+    NULL_UNIQUE = 1;
+    NOT_UNIQUE = 2;
+}
+
+// Empty expression
+message Empty {
+}
+
+// Literal value
+message Value {
+    oneof value {
+        double double_value = 1;
+        float float_value = 2;
+        int64 long_value = 3;
+        bool bool_value = 4;
+        string string_value = 5;
+        bytes bytes_value = 6;
+        int32 int_value = 7;
+    }
+}
+
+// Record type key
+message RecordTypeKey {
+}
+
+// List of expressions
+message List {
+    repeated KeyExpression children = 1;
+}
+
+// Store header - stored at STORE_INFO key
+message DataStoreInfo {
+    int32 format_version = 1;
+    int32 meta_data_version = 2;
+    int32 user_version = 3;
+    KeyExpression record_count_key = 4;
+    uint64 last_update_time = 5;
+    bool omit_unsplit_record_suffix = 6;
+    bool cacheable = 7;
+    repeated UserFieldEntry user_field = 8;
+    RecordCountState record_count_state = 9;
+    StoreLockState store_lock_state = 10;
+}
+
+message UserFieldEntry {
+    string key = 1;
+    bytes value = 2;
+}
+
+enum RecordCountState {
+    RECORD_COUNT_STATE_UNSPECIFIED = 0;
+    READABLE = 1;
+    WRITE_ONLY = 2;
+    DISABLED = 3;
+}
+
+enum StoreLockState {
+    STORE_LOCK_STATE_UNSPECIFIED = 0;
+    UNLOCKED = 1;
+    READ_ONLY = 2;
+    LOCKED = 3;
+}
+
+// Index definition
+message Index {
+    // Record types this index applies to
+    repeated string record_type = 1;
+
+    // Index type (deprecated in Java, use 'type' string instead)
+    IndexType index_type = 2;
+
+    // Index name
+    string name = 3;
+
+    // Key expression for the index
+    KeyExpression root_expression = 4;
+
+    // Subspace key (bytes, typically packed integer)
+    bytes subspace_key = 5;
+
+    // Version when last modified
+    int32 last_modified_version = 6;
+
+    // Value expression (for covering indexes)
+    KeyExpression value_expression = 7;
+
+    // Index type string (VALUE, COUNT, RANK, TEXT, etc.)
+    string type = 8;
+
+    // Index options
+    repeated IndexOption options = 9;
+
+    // Version when added
+    int32 added_version = 10;
+
+    // Predicate for filtered indexes
+    Predicate predicate = 11;
+}
+
+enum IndexType {
+    INDEX_TYPE_UNSPECIFIED = 0;
+    INDEX = 1;
+    UNIQUE = 2;
+    RANK = 3;
+    RANK_UNIQUE = 4;
+}
+
+message IndexOption {
+    string key = 1;
+    string value = 2;
+}
+
+message Predicate {
+    oneof predicate {
+        AndPredicate and = 1;
+        OrPredicate or = 2;
+        NotPredicate not = 3;
+        ValuePredicate value = 4;
+        ConstantPredicate constant = 5;
+    }
+}
+
+message AndPredicate {
+    repeated Predicate children = 1;
+}
+
+message OrPredicate {
+    repeated Predicate children = 1;
+}
+
+message NotPredicate {
+    Predicate child = 1;
+}
+
+message ValuePredicate {
+    KeyExpression value = 1;
+    ComparisonType comparison = 2;
+    Value comparand = 3;
+}
+
+enum ComparisonType {
+    COMPARISON_TYPE_UNSPECIFIED = 0;
+    EQUALS = 1;
+    NOT_EQUALS = 2;
+    LESS_THAN = 3;
+    LESS_THAN_OR_EQUALS = 4;
+    GREATER_THAN = 5;
+    GREATER_THAN_OR_EQUALS = 6;
+    STARTS_WITH = 7;
+    NOT_NULL = 8;
+    IS_NULL = 9;
+    IN = 10;
+    TEXT_CONTAINS_ALL = 11;
+    TEXT_CONTAINS_ANY = 12;
+    TEXT_CONTAINS_PHRASE = 13;
+    TEXT_CONTAINS_PREFIX = 14;
+    TEXT_CONTAINS_ALL_PREFIXES = 15;
+    TEXT_CONTAINS_ANY_PREFIX = 16;
+}
+
+message ConstantPredicate {
+    bool value = 1;
+}
+
+// Record type definition
+message RecordType {
+    string name = 1;
+    KeyExpression primary_key = 2;
+    int32 since_version = 3;
+    KeyExpression explicit_key = 4;
+}
+
+// Former (deleted) index
+message FormerIndex {
+    bytes subspace_key = 1;
+    int32 added_version = 2;
+    int32 removed_version = 3;
+    string former_name = 4;
+}
+
+// Complete metadata
+message MetaData {
+    // File descriptor for record protos (serialized FileDescriptorProto)
+    bytes records_descriptor = 1;
+
+    // Index definitions
+    repeated Index indexes = 2;
+
+    // Record type definitions
+    repeated RecordType record_types = 3;
+
+    // Whether to split long records
+    bool split_long_records = 4;
+
+    // Metadata version
+    int32 version = 5;
+
+    // Removed indexes
+    repeated FormerIndex former_indexes = 6;
+
+    // Record count key (deprecated)
+    KeyExpression record_count_key = 7;
+
+    // Whether to store record versions
+    bool store_record_versions = 8;
+
+    // Dependency file descriptors
+    repeated bytes dependencies = 9;
+
+    // Counter for generating subspace keys
+    int64 subspace_key_counter = 10;
+
+    // Whether subspace key counter is in use
+    bool uses_subspace_key_counter = 11;
+}
