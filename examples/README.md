@@ -2,15 +2,162 @@
 
 ## Quick Start
 
-Run the comprehensive example that demonstrates all features:
-
 ```bash
 python examples/comprehensive_example.py
 ```
 
+## Prerequisites
+
+### 1. FoundationDB
+
+Install FoundationDB server and client:
+
+```bash
+# macOS (Homebrew)
+brew install foundationdb
+
+# Ubuntu/Debian
+wget https://github.com/apple/foundationdb/releases/download/7.3.27/foundationdb-clients_7.3.27-1_amd64.deb
+wget https://github.com/apple/foundationdb/releases/download/7.3.27/foundationdb-server_7.3.27-1_amd64.deb
+sudo dpkg -i foundationdb-clients_7.3.27-1_amd64.deb foundationdb-server_7.3.27-1_amd64.deb
+```
+
+### 2. Cluster File Configuration
+
+The library looks for the FDB cluster file in this order:
+
+1. **Environment variable** (recommended):
+   ```bash
+   export FDB_CLUSTER_FILE=/path/to/fdb.cluster
+   ```
+
+2. **Standard locations** (checked automatically):
+   ```
+   ./fdb.cluster                              # Local development (project root)
+   /etc/foundationdb/fdb.cluster              # Linux package install
+   /usr/local/etc/foundationdb/fdb.cluster    # macOS Homebrew
+   ```
+
+For local development, you can copy or symlink:
+```bash
+# Linux
+ln -s /etc/foundationdb/fdb.cluster ./fdb.cluster
+
+# macOS
+ln -s /usr/local/etc/foundationdb/fdb.cluster ./fdb.cluster
+```
+
+### 3. Protocol Buffers
+
+Install the protobuf compiler:
+
+```bash
+# macOS
+brew install protobuf
+
+# Ubuntu/Debian
+sudo apt install protobuf-compiler
+
+# pip (Python bindings)
+pip install protobuf
+```
+
+---
+
+## Working with Protocol Buffers
+
+### Schema Definition
+
+Define your schema in a `.proto` file:
+
+```protobuf
+// myapp.proto
+syntax = "proto3";
+package myapp;
+
+message User {
+    int64 id = 1;           // Primary key
+    string email = 2;
+    string name = 3;
+    int32 age = 4;
+}
+
+message Product {
+    int64 id = 1;
+    string name = 2;
+    int32 price_cents = 3;
+}
+
+// Required: Union of all record types
+message RecordUnion {
+    oneof record {
+        User user = 1;
+        Product product = 2;
+    }
+}
+```
+
+### Generate Python Bindings
+
+```bash
+# Generate from .proto file
+protoc --python_out=. myapp.proto
+
+# This creates myapp_pb2.py (auto-generated, don't edit)
+```
+
+The generated `*_pb2.py` file contains serialized descriptors. It looks "weird" because modern protobuf embeds the schema as a binary blob rather than generating readable Python classes. This is normal.
+
+### Using Generated Classes
+
+```python
+from myapp_pb2 import User, Product, DESCRIPTOR
+import fdb_record_layer as frl
+
+# Build metadata from the descriptor
+metadata = (
+    frl.RecordMetaDataBuilder(DESCRIPTOR)
+    .set_record_type("User", primary_key=frl.field("id"))
+    .add_index("User", "user_email", frl.field("email"))
+    .set_record_type("Product", primary_key=frl.field("id"))
+    .build()
+)
+
+# Create and save records
+user = User(id=1, email="alice@example.com", name="Alice", age=30)
+await store.save_record(user)
+```
+
+### Regenerating After Schema Changes
+
+When you modify your `.proto` file:
+
+```bash
+# Regenerate Python bindings
+protoc --python_out=. myapp.proto
+
+# If you added new fields, existing data is forward-compatible
+# If you removed fields, ensure schema evolution validation passes
+```
+
+### Git Strategy for Generated Files
+
+Option A: **Commit generated files** (simpler CI/CD)
+```gitignore
+# Don't ignore - commit the generated files
+```
+
+Option B: **Ignore and regenerate** (cleaner repo)
+```gitignore
+*_pb2.py
+*_pb2_grpc.py
+```
+
+---
+
 ## Comprehensive Example
 
-The `comprehensive_example.py` file demonstrates all major features in a realistic e-commerce scenario:
+The `comprehensive_example.py` demonstrates all features in an e-commerce scenario:
 
 | Section | Features |
 |---------|----------|
@@ -22,28 +169,6 @@ The `comprehensive_example.py` file demonstrates all major features in a realist
 | Production Utils | Metrics, caching, circuit breakers, health checks |
 | Pagination | Continuation-based cursors |
 | Schema Evolution | Safe migration validation |
-
-## Legacy Phase Examples
-
-The `test_phase*.py` files are development test scripts from the original implementation:
-
-| File | Focus |
-|------|-------|
-| test_phase1.py | Basic record store and index scanning |
-| test_phase2.py | Query builder and heuristic planner |
-| test_phase3.py | Advanced indexes (COUNT, RANK, TEXT) |
-| test_phase4.py | Cascades cost-based optimizer |
-| test_phase5.py | Schema evolution and metadata persistence |
-| test_phase6.py | SQL layer (lexer, parser, translator) |
-| test_phase7.py | Production utilities (batch, cache, metrics) |
-
-## Proto Definition
-
-The `sample.proto` file defines the test schema. To regenerate Python bindings:
-
-```bash
-protoc --python_out=. examples/sample.proto
-```
 
 ---
 

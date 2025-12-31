@@ -31,9 +31,25 @@ from typing import List, Optional
 # Add parent to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Set FDB paths
-os.environ.setdefault("FDB_LIBRARY_PATH", os.path.expanduser("~/.fdb/lib/libfdb_c.dylib"))
-os.environ.setdefault("FDB_CLUSTER_FILE", os.path.expanduser("~/.fdb/conf/fdb.cluster"))
+# FDB cluster file discovery (in order of precedence)
+def find_cluster_file() -> str | None:
+    """Find FDB cluster file using standard locations."""
+    # 1. Environment variable (official way)
+    if cluster_file := os.environ.get("FDB_CLUSTER_FILE"):
+        if os.path.exists(cluster_file):
+            return cluster_file
+
+    # 2. Standard locations
+    standard_paths = [
+        "./fdb.cluster",                              # Local development
+        "/etc/foundationdb/fdb.cluster",              # Linux package install
+        "/usr/local/etc/foundationdb/fdb.cluster",   # macOS Homebrew
+    ]
+    for path in standard_paths:
+        if os.path.exists(path):
+            return path
+
+    return None
 
 
 # =============================================================================
@@ -861,7 +877,12 @@ async def main():
         from fdb.subspace_impl import Subspace
 
         # Initialize
-        cluster_file = os.path.expanduser("~/.fdb/conf/fdb.cluster")
+        cluster_file = find_cluster_file()
+        if not cluster_file:
+            raise RuntimeError(
+                "FDB cluster file not found. Set FDB_CLUSTER_FILE environment variable "
+                "or place fdb.cluster in ./fdb.cluster, /etc/foundationdb/, or /usr/local/etc/foundationdb/"
+            )
         db = frl.FDBDatabase(cluster_file)
         metadata = create_metadata()
         subspace = Subspace(("examples", "comprehensive"))
