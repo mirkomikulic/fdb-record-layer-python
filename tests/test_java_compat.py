@@ -5,10 +5,9 @@ enabling data interchange between Java and Python applications.
 """
 
 import struct
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
 
 # ============================================================================
 # Test fixtures and mocks
@@ -73,7 +72,10 @@ class MockSubspace:
         for elem in key:
             if isinstance(elem, int):
                 # Simple integer encoding (not full tuple layer, but close enough)
-                parts.append(b"\x15" + elem.to_bytes(1, "big", signed=False) if 0 <= elem < 256 else struct.pack(">q", elem))
+                if 0 <= elem < 256:
+                    parts.append(b"\x15" + elem.to_bytes(1, "big", signed=False))
+                else:
+                    parts.append(struct.pack(">q", elem))
             elif isinstance(elem, bytes):
                 parts.append(b"\x01" + elem + b"\x00")
             else:
@@ -127,16 +129,16 @@ class TestKeyspaceConstants:
     def test_convenience_constants(self):
         """Test convenience constants match enum values."""
         from fdb_record_layer.compat.keyspace import (
-            STORE_INFO_KEY,
-            RECORD_KEY,
-            INDEX_KEY,
-            INDEX_SECONDARY_SPACE_KEY,
-            RECORD_COUNT_KEY,
-            INDEX_STATE_SPACE_KEY,
-            INDEX_RANGE_SPACE_KEY,
-            INDEX_UNIQUENESS_VIOLATIONS_KEY,
             INDEX_BUILD_SPACE_KEY,
+            INDEX_KEY,
+            INDEX_RANGE_SPACE_KEY,
+            INDEX_SECONDARY_SPACE_KEY,
+            INDEX_STATE_SPACE_KEY,
+            INDEX_UNIQUENESS_VIOLATIONS_KEY,
+            RECORD_COUNT_KEY,
+            RECORD_KEY,
             RECORD_VERSION_SPACE_KEY,
+            STORE_INFO_KEY,
         )
 
         assert STORE_INFO_KEY == 0
@@ -168,10 +170,10 @@ class TestSplitHelper:
     def test_split_constants(self):
         """Test split constants match Java."""
         from fdb_record_layer.compat.split import (
-            SPLIT_RECORD_SIZE,
-            UNSPLIT_RECORD,
-            START_SPLIT_RECORD,
             RECORD_VERSION,
+            SPLIT_RECORD_SIZE,
+            START_SPLIT_RECORD,
+            UNSPLIT_RECORD,
         )
 
         assert SPLIT_RECORD_SIZE == 100_000  # 100KB
@@ -195,7 +197,7 @@ class TestSplitHelper:
 
     def test_needs_split_boundary(self):
         """Test boundary condition at exactly 100KB."""
-        from fdb_record_layer.compat.split import SplitHelper, SPLIT_RECORD_SIZE
+        from fdb_record_layer.compat.split import SPLIT_RECORD_SIZE, SplitHelper
 
         # Exactly at limit - no split
         data_at_limit = b"x" * SPLIT_RECORD_SIZE
@@ -207,7 +209,7 @@ class TestSplitHelper:
 
     def test_save_unsplit_record_with_suffix(self):
         """Test saving small record with unsplit suffix."""
-        from fdb_record_layer.compat.split import SplitHelper, UNSPLIT_RECORD
+        from fdb_record_layer.compat.split import UNSPLIT_RECORD, SplitHelper
 
         tr = MockTransaction()
         subspace = MockSubspace(b"test:")
@@ -244,9 +246,8 @@ class TestSplitHelper:
     def test_save_split_record(self):
         """Test saving large record creates multiple chunks."""
         from fdb_record_layer.compat.split import (
-            SplitHelper,
-            SPLIT_RECORD_SIZE,
             START_SPLIT_RECORD,
+            SplitHelper,
         )
 
         tr = MockTransaction()
@@ -292,7 +293,7 @@ class TestSplitHelper:
     @pytest.mark.asyncio
     async def test_load_unsplit_record(self):
         """Test loading an unsplit record."""
-        from fdb_record_layer.compat.split import SplitHelper, UNSPLIT_RECORD
+        from fdb_record_layer.compat.split import UNSPLIT_RECORD, SplitHelper
 
         tr = MockTransaction()
         subspace = MockSubspace(b"test:")
@@ -321,7 +322,7 @@ class TestSplitHelper:
 
     def test_save_version(self):
         """Test saving record version."""
-        from fdb_record_layer.compat.split import SplitHelper, RECORD_VERSION
+        from fdb_record_layer.compat.split import RECORD_VERSION, SplitHelper
 
         tr = MockTransaction()
         subspace = MockSubspace(b"test:")
@@ -338,7 +339,7 @@ class TestSplitHelper:
     @pytest.mark.asyncio
     async def test_load_version(self):
         """Test loading record version."""
-        from fdb_record_layer.compat.split import SplitHelper, RECORD_VERSION
+        from fdb_record_layer.compat.split import RECORD_VERSION, SplitHelper
 
         tr = MockTransaction()
         subspace = MockSubspace(b"test:")
@@ -367,7 +368,7 @@ class TestSplitHelper:
 
     def test_delete_version(self):
         """Test deleting record version."""
-        from fdb_record_layer.compat.split import SplitHelper, RECORD_VERSION
+        from fdb_record_layer.compat.split import RECORD_VERSION, SplitHelper
 
         tr = MockTransaction()
         subspace = MockSubspace(b"test:")
@@ -421,9 +422,9 @@ class TestStoreHeader:
     def test_default_header_values(self):
         """Test default header values."""
         from fdb_record_layer.compat.store_header import (
-            StoreHeader,
             FormatVersion,
             RecordCountState,
+            StoreHeader,
             StoreLockState,
         )
 
@@ -442,9 +443,9 @@ class TestStoreHeader:
     def test_header_to_bytes_roundtrip(self):
         """Test header serialization roundtrip."""
         from fdb_record_layer.compat.store_header import (
-            StoreHeader,
             FormatVersion,
             RecordCountState,
+            StoreHeader,
         )
 
         original = StoreHeader(
@@ -489,8 +490,8 @@ class TestStoreHeader:
 
     def test_header_from_proto(self):
         """Test header created from protobuf."""
-        from fdb_record_layer.compat.store_header import StoreHeader
         from fdb_record_layer.compat.proto import DataStoreInfo
+        from fdb_record_layer.compat.store_header import StoreHeader
 
         proto = DataStoreInfo()
         proto.format_version = 3
@@ -515,7 +516,7 @@ class TestStoreHeader:
 
     def test_check_format_version(self):
         """Test format version checking."""
-        from fdb_record_layer.compat.store_header import StoreHeader, FormatVersion
+        from fdb_record_layer.compat.store_header import FormatVersion, StoreHeader
 
         header = StoreHeader(format_version=FormatVersion.SAVE_VERSION_WITH_RECORD)
 
@@ -529,7 +530,7 @@ class TestStoreHeader:
 
     def test_should_omit_unsplit_suffix(self):
         """Test unsplit suffix omission logic."""
-        from fdb_record_layer.compat.store_header import StoreHeader, FormatVersion
+        from fdb_record_layer.compat.store_header import FormatVersion, StoreHeader
 
         # Old format - should omit
         old_format = StoreHeader(format_version=FormatVersion.V0)
@@ -549,7 +550,7 @@ class TestStoreHeader:
 
     def test_should_save_version_with_record(self):
         """Test version saving logic."""
-        from fdb_record_layer.compat.store_header import StoreHeader, FormatVersion
+        from fdb_record_layer.compat.store_header import FormatVersion, StoreHeader
 
         # Old format - should not save version
         old_format = StoreHeader(format_version=FormatVersion.SAVE_UNSPLIT_WITH_SUFFIX)
@@ -677,8 +678,8 @@ class TestMetadataStore:
     def test_key_expression_to_proto_concatenate(self):
         """Test converting concatenate expression to proto."""
         from fdb_record_layer.compat.metadata_store import key_expression_to_proto
-        from fdb_record_layer.expressions.field import FieldKeyExpression
         from fdb_record_layer.expressions.concat import ConcatenateKeyExpression
+        from fdb_record_layer.expressions.field import FieldKeyExpression
 
         expr = ConcatenateKeyExpression([
             FieldKeyExpression("first"),
@@ -694,7 +695,7 @@ class TestMetadataStore:
     def test_proto_to_key_expression_field(self):
         """Test converting proto to field expression."""
         from fdb_record_layer.compat.metadata_store import proto_to_key_expression
-        from fdb_record_layer.compat.proto import KeyExpression, Field, FanType
+        from fdb_record_layer.compat.proto import FanType, Field, KeyExpression
         from fdb_record_layer.expressions.field import FieldKeyExpression
 
         proto = KeyExpression()
@@ -708,7 +709,7 @@ class TestMetadataStore:
     def test_proto_to_key_expression_then(self):
         """Test converting proto then to concatenate expression."""
         from fdb_record_layer.compat.metadata_store import proto_to_key_expression
-        from fdb_record_layer.compat.proto import KeyExpression, Field, Then, FanType
+        from fdb_record_layer.compat.proto import FanType, Field, KeyExpression
         from fdb_record_layer.expressions.concat import ConcatenateKeyExpression
 
         # Build proto
@@ -744,9 +745,9 @@ class TestMetadataStore:
     def test_assign_subspace_keys(self):
         """Test assigning integer subspace keys to indexes."""
         from fdb_record_layer.compat.metadata_store import assign_subspace_keys
-        from fdb_record_layer.metadata.record_metadata import RecordMetaData
-        from fdb_record_layer.metadata.index import Index, IndexType
         from fdb_record_layer.expressions.field import FieldKeyExpression
+        from fdb_record_layer.metadata.index import Index, IndexType
+        from fdb_record_layer.metadata.record_metadata import RecordMetaData
 
         # Create metadata with indexes
         metadata = RecordMetaData(
@@ -778,9 +779,9 @@ class TestMetadataStore:
     def test_metadata_to_proto_roundtrip(self):
         """Test metadata serialization roundtrip."""
         from fdb_record_layer.compat.metadata_store import JavaCompatibleMetaDataStore
-        from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
-        from fdb_record_layer.metadata.index import Index, IndexType
         from fdb_record_layer.expressions.field import FieldKeyExpression
+        from fdb_record_layer.metadata.index import Index, IndexType
+        from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
 
         subspace = MockSubspace(b"meta:")
         store = JavaCompatibleMetaDataStore(subspace)
@@ -826,12 +827,12 @@ class TestProtoModule:
     def test_key_expression_imports(self):
         """Test key expression protos are available."""
         from fdb_record_layer.compat.proto import (
-            KeyExpression,
-            Then,
-            Nesting,
-            Field,
             Empty,
             FanType,
+            Field,
+            KeyExpression,
+            Nesting,
+            Then,
         )
 
         # Just verify they exist and are classes
@@ -856,7 +857,7 @@ class TestProtoModule:
 
     def test_index_imports(self):
         """Test index protos are available."""
-        from fdb_record_layer.compat.proto import Index, IndexType, FormerIndex
+        from fdb_record_layer.compat.proto import FormerIndex, Index, IndexType
 
         assert Index is not None
         assert IndexType is not None
@@ -891,10 +892,10 @@ class TestCompatModuleExports:
     def test_keyspace_exports(self):
         """Test keyspace exports."""
         from fdb_record_layer.compat import (
-            FDBRecordStoreKeyspace,
-            STORE_INFO_KEY,
-            RECORD_KEY,
             INDEX_KEY,
+            RECORD_KEY,
+            STORE_INFO_KEY,
+            FDBRecordStoreKeyspace,
         )
 
         assert FDBRecordStoreKeyspace is not None
@@ -905,11 +906,11 @@ class TestCompatModuleExports:
     def test_split_exports(self):
         """Test split exports."""
         from fdb_record_layer.compat import (
-            SplitHelper,
-            SPLIT_RECORD_SIZE,
-            UNSPLIT_RECORD,
-            START_SPLIT_RECORD,
             RECORD_VERSION,
+            SPLIT_RECORD_SIZE,
+            START_SPLIT_RECORD,
+            UNSPLIT_RECORD,
+            SplitHelper,
         )
 
         assert SplitHelper is not None
@@ -921,9 +922,9 @@ class TestCompatModuleExports:
     def test_store_header_exports(self):
         """Test store header exports."""
         from fdb_record_layer.compat import (
-            StoreHeader,
             FormatVersion,
             RecordCountState,
+            StoreHeader,
             StoreLockState,
         )
 
@@ -936,9 +937,9 @@ class TestCompatModuleExports:
         """Test metadata store exports."""
         from fdb_record_layer.compat import (
             JavaCompatibleMetaDataStore,
+            assign_subspace_keys,
             key_expression_to_proto,
             proto_to_key_expression,
-            assign_subspace_keys,
         )
 
         assert JavaCompatibleMetaDataStore is not None
@@ -958,9 +959,9 @@ class TestIntegerSubspaceKeys:
     def test_subspace_key_is_integer(self):
         """Test subspace keys are assigned as integers."""
         from fdb_record_layer.compat.metadata_store import assign_subspace_keys
-        from fdb_record_layer.metadata.record_metadata import RecordMetaData
-        from fdb_record_layer.metadata.index import Index, IndexType
         from fdb_record_layer.expressions.field import FieldKeyExpression
+        from fdb_record_layer.metadata.index import Index, IndexType
+        from fdb_record_layer.metadata.record_metadata import RecordMetaData
 
         metadata = RecordMetaData(
             version=1,
@@ -984,9 +985,9 @@ class TestIntegerSubspaceKeys:
     def test_subspace_key_packed_as_big_endian_long(self):
         """Test subspace keys are packed as big-endian 8-byte integers."""
         from fdb_record_layer.compat.metadata_store import JavaCompatibleMetaDataStore
-        from fdb_record_layer.metadata.record_metadata import RecordMetaData
-        from fdb_record_layer.metadata.index import Index, IndexType
         from fdb_record_layer.expressions.field import FieldKeyExpression
+        from fdb_record_layer.metadata.index import Index, IndexType
+        from fdb_record_layer.metadata.record_metadata import RecordMetaData
 
         subspace = MockSubspace(b"test:")
         store = JavaCompatibleMetaDataStore(subspace)
@@ -1015,9 +1016,9 @@ class TestIntegerSubspaceKeys:
     def test_existing_subspace_key_preserved(self):
         """Test existing subspace keys are preserved."""
         from fdb_record_layer.compat.metadata_store import assign_subspace_keys
-        from fdb_record_layer.metadata.record_metadata import RecordMetaData
-        from fdb_record_layer.metadata.index import Index, IndexType
         from fdb_record_layer.expressions.field import FieldKeyExpression
+        from fdb_record_layer.metadata.index import Index, IndexType
+        from fdb_record_layer.metadata.record_metadata import RecordMetaData
 
         index = Index(
             name="existing_idx",

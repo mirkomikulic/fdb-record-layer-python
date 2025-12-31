@@ -122,6 +122,22 @@ except ImportError:
     ProtobufSerializer = None  # type: ignore
 
 # Planners (no external dependencies)
+# Java compatibility (no FDB required for imports)
+from fdb_record_layer.compat.keyspace import (
+    INDEX_KEY,
+    RECORD_KEY,
+    STORE_INFO_KEY,
+    FDBRecordStoreKeyspace,
+)
+from fdb_record_layer.compat.split import (
+    SPLIT_RECORD_SIZE,
+    UNSPLIT_RECORD,
+    SplitHelper,
+)
+from fdb_record_layer.compat.store_header import (
+    FormatVersion,
+    StoreHeader,
+)
 from fdb_record_layer.planner.heuristic import HeuristicPlanner, RecordQueryPlanner
 
 # Plans (no external dependencies)
@@ -181,28 +197,11 @@ from fdb_record_layer.utils.logging import (
     log_timing,
 )
 
-# Java compatibility (no FDB required for imports)
-from fdb_record_layer.compat.keyspace import (
-    FDBRecordStoreKeyspace,
-    STORE_INFO_KEY,
-    RECORD_KEY,
-    INDEX_KEY,
-)
-from fdb_record_layer.compat.split import (
-    SplitHelper,
-    SPLIT_RECORD_SIZE,
-    UNSPLIT_RECORD,
-)
-from fdb_record_layer.compat.store_header import (
-    StoreHeader,
-    FormatVersion,
-)
-
 # Java-compatible store (requires FDB)
 try:
     from fdb_record_layer.compat.java_store import (
-        JavaCompatibleStore,
         FDBRecordVersion,
+        JavaCompatibleStore,
     )
 except ImportError:
     JavaCompatibleStore = None  # type: ignore

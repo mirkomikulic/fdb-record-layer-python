@@ -15,24 +15,28 @@ import struct
 from typing import TYPE_CHECKING, Any
 
 from fdb_record_layer.compat.proto import (
-    MetaData as MetaDataProto,
-    Index as IndexProto,
-    RecordType as RecordTypeProto,
-    KeyExpression as KeyExpressionProto,
-    Field as FieldProto,
-    Then as ThenProto,
-    Nesting as NestingProto,
     FanType,
-    FormerIndex as FormerIndexProto,
 )
-from fdb_record_layer.compat.keyspace import (
-    INDEX_SECONDARY_SPACE_KEY,
+from fdb_record_layer.compat.proto import (
+    Field as FieldProto,
+)
+from fdb_record_layer.compat.proto import (
+    KeyExpression as KeyExpressionProto,
+)
+from fdb_record_layer.compat.proto import (
+    MetaData as MetaDataProto,
+)
+from fdb_record_layer.compat.proto import (
+    Nesting as NestingProto,
+)
+from fdb_record_layer.compat.proto import (
+    Then as ThenProto,
 )
 from fdb_record_layer.expressions.base import KeyExpression
-from fdb_record_layer.expressions.field import FieldKeyExpression
 from fdb_record_layer.expressions.concat import ConcatenateKeyExpression
+from fdb_record_layer.expressions.field import FieldKeyExpression
 from fdb_record_layer.expressions.nest import NestKeyExpression
-from fdb_record_layer.metadata.index import Index, IndexType, IndexState
+from fdb_record_layer.metadata.index import Index, IndexType
 from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
 
 if TYPE_CHECKING:

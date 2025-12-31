@@ -12,12 +12,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from fdb_record_layer.compat.proto import (
     DataStoreInfo as DataStoreInfoProto,
-    RecordCountState as RecordCountStateProto,
-    StoreLockState as StoreLockStateProto,
 )
 
 if TYPE_CHECKING:

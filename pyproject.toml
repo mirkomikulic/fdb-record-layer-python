@@ -88,6 +88,7 @@ exclude = [
     "examples/*_pb2.py",
     "examples/*_pb2_grpc.py",
     "tests/integration/*_pb2.py",
+    "fdb_record_layer/compat/proto/*_pb2.py",
 ]
 
 [tool.ruff.lint]

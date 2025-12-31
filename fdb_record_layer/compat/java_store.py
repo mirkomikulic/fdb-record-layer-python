@@ -14,20 +14,19 @@ Key differences from the standard FDBRecordStore:
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from fdb_record_layer.compat.keyspace import (
-    RECORD_KEY,
+    INDEX_BUILD_SPACE_KEY,
     INDEX_KEY,
     INDEX_STATE_SPACE_KEY,
-    INDEX_BUILD_SPACE_KEY,
     RECORD_COUNT_KEY,
+    RECORD_KEY,
 )
-from fdb_record_layer.compat.split import SplitHelper, UNSPLIT_RECORD
-from fdb_record_layer.compat.store_header import StoreHeader, FormatVersion
+from fdb_record_layer.compat.split import SplitHelper
+from fdb_record_layer.compat.store_header import FormatVersion, StoreHeader
 from fdb_record_layer.core.exceptions import (
     InvalidPrimaryKeyException,
     RecordTypeNotFoundException,

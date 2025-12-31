@@ -13,39 +13,36 @@ Key components:
 """
 
 from fdb_record_layer.compat.keyspace import (
-    FDBRecordStoreKeyspace,
-    STORE_INFO_KEY,
-    RECORD_KEY,
-    INDEX_KEY,
-    INDEX_SECONDARY_SPACE_KEY,
-    RECORD_COUNT_KEY,
-    INDEX_STATE_SPACE_KEY,
-    INDEX_RANGE_SPACE_KEY,
-    INDEX_UNIQUENESS_VIOLATIONS_KEY,
-    RECORD_VERSION_SPACE_KEY,
     INDEX_BUILD_SPACE_KEY,
+    INDEX_KEY,
+    INDEX_RANGE_SPACE_KEY,
+    INDEX_SECONDARY_SPACE_KEY,
+    INDEX_STATE_SPACE_KEY,
+    INDEX_UNIQUENESS_VIOLATIONS_KEY,
+    RECORD_COUNT_KEY,
+    RECORD_KEY,
+    RECORD_VERSION_SPACE_KEY,
+    STORE_INFO_KEY,
+    FDBRecordStoreKeyspace,
 )
-
-from fdb_record_layer.compat.split import (
-    SplitHelper,
-    SPLIT_RECORD_SIZE,
-    UNSPLIT_RECORD,
-    START_SPLIT_RECORD,
-    RECORD_VERSION,
-)
-
-from fdb_record_layer.compat.store_header import (
-    StoreHeader,
-    FormatVersion,
-    RecordCountState,
-    StoreLockState,
-)
-
 from fdb_record_layer.compat.metadata_store import (
     JavaCompatibleMetaDataStore,
+    assign_subspace_keys,
     key_expression_to_proto,
     proto_to_key_expression,
-    assign_subspace_keys,
+)
+from fdb_record_layer.compat.split import (
+    RECORD_VERSION,
+    SPLIT_RECORD_SIZE,
+    START_SPLIT_RECORD,
+    UNSPLIT_RECORD,
+    SplitHelper,
+)
+from fdb_record_layer.compat.store_header import (
+    FormatVersion,
+    RecordCountState,
+    StoreHeader,
+    StoreLockState,
 )
 
 __all__ = [
