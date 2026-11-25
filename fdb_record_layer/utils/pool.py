@@ -194,7 +194,7 @@ class ConnectionPool(Generic[T]):
                         self._not_empty.wait(),
                         timeout=remaining,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     raise TimeoutError("Connection acquisition timed out")
 
     async def _release(self, conn: PooledConnection[T]) -> None:
@@ -312,7 +312,9 @@ class DatabasePool:
         try:
             import fdb
 
-            fdb.api_version(710)
+            from fdb_record_layer.core.fdb_api import ensure_api_version
+
+            ensure_api_version()
             self._db = fdb.open(self._cluster_file)
             db = self._db  # Capture for lambda
 

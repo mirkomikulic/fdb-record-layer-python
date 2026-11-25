@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from fdb_record_layer._proto_compat import is_repeated
 from fdb_record_layer.expressions.base import KeyExpression
 
 if TYPE_CHECKING:
@@ -61,7 +62,7 @@ class NestKeyExpression(KeyExpression):
         descriptor = record.DESCRIPTOR
         for field in descriptor.fields:
             if field.name == self.parent_field:
-                return field.label == field.LABEL_REPEATED
+                return is_repeated(field)
         return False
 
     def get_column_size(self) -> int:

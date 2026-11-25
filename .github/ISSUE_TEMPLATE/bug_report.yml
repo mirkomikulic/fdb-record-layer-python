@@ -1,0 +1,45 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead? Include the full error and traceback.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: The smallest code (and .proto, if relevant) that shows the problem.
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: package-version
+    attributes:
+      label: fdb-record-layer version
+      placeholder: "0.1.0b8"
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      placeholder: "3.14"
+    validations:
+      required: true
+  - type: input
+    id: fdb-version
+    attributes:
+      label: FoundationDB server / client library / `foundationdb` package versions
+      placeholder: "8.0.1 / 8.0.1 / 8.0.1"
+    validations:
+      required: true
+  - type: input
+    id: protobuf-version
+    attributes:
+      label: protobuf version
+      placeholder: "7.36.2"

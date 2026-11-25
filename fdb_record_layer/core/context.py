@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 import time
 from collections.abc import Callable
@@ -16,6 +17,7 @@ from fdb_record_layer.core.exceptions import (
     TransactionRetryLimitExceeded,
     TransactionTimeoutError,
 )
+from fdb_record_layer.core.fdb_api import ensure_api_version
 
 # Module logger
 _logger = logging.getLogger("fdb_record_layer.core.context")
@@ -25,8 +27,8 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
-# Initialize FDB API version
-fdb.api_version(740)
+# Initialize FDB API version (no-op if the application already selected one)
+ensure_api_version()
 
 
 @dataclass
@@ -281,7 +283,7 @@ class FDBDatabase:
             ctx = self.open_context()
             try:
                 # Execute the function
-                if asyncio.iscoroutinefunction(func):
+                if inspect.iscoroutinefunction(func):
                     result = await func(ctx)
                 else:
                     result = func(ctx)

@@ -583,7 +583,7 @@ def demonstrate_sql_queries():
 # SECTION 8: Production Utilities
 # =============================================================================
 
-def demonstrate_production_utilities():
+async def demonstrate_production_utilities():
     """Demonstrate production-ready utilities."""
     print_header("Production Utilities")
 
@@ -624,8 +624,8 @@ def demonstrate_production_utilities():
     print(f"  Cached customer 1: {result}")
 
     # Get or compute
-    def load_customer(key):
-        print(f"    Loading {key} from database...")
+    def load_customer():
+        print("    Loading customer:4 from database...")
         return {"id": 4, "name": "David"}
 
     result = cache.get_or_compute("customer:4", load_customer)
@@ -649,7 +649,7 @@ def demonstrate_production_utilities():
         )
     )
     print(f"  Circuit state: {breaker.state.value}")
-    print(f"  Failure count: {breaker.failure_count}")
+    print(f"  Failed requests: {breaker.stats.failed_requests}")
 
     # Health Checks
     print_subheader("Health Checks")
@@ -661,11 +661,11 @@ def demonstrate_production_utilities():
     checker = get_health_checker()
 
     # Register checks
-    async def check_database():
-        return HealthStatus.HEALTHY, "Database responding"
+    def check_database():
+        return True  # e.g. ping FDB here
 
-    async def check_cache():
-        return HealthStatus.HEALTHY, "Cache operational"
+    def check_cache():
+        return True
 
     checker.register_check("database", check_database)
     checker.register_check("cache", check_cache)
@@ -673,10 +673,10 @@ def demonstrate_production_utilities():
     async def run_health():
         report = await checker.check_health()
         print(f"  Overall status: {report.status.value}")
-        for name, health in report.components.items():
-            print(f"    - {name}: {health.status.value}")
+        for component in report.components:
+            print(f"    - {component.name}: {component.status.value}")
 
-    asyncio.run(run_health())
+    await run_health()
 
     # Batch Processing
     print_subheader("Batch Processing")
@@ -695,7 +695,7 @@ def demonstrate_production_utilities():
         print(f"  Processed: {result.total_succeeded}/{result.total_processed} items")
         print(f"  Success rate: {result.success_rate:.1%}")
 
-    asyncio.run(run_batch())
+    await run_batch()
 
 
 # =============================================================================
@@ -767,8 +767,12 @@ def demonstrate_schema_evolution():
             self.fields = fields
 
     class MockField:
-        def __init__(self, name):
+        TYPE_STRING = 9  # FieldDescriptor.TYPE_STRING
+
+        def __init__(self, name, type=TYPE_STRING, label=1):
             self.name = name
+            self.type = type
+            self.label = label  # 1 = optional
 
     # Version 1 schema
     old_metadata = RecordMetaData(
@@ -871,7 +875,8 @@ async def main():
 
     try:
         import fdb
-        fdb.api_version(740)
+        from fdb_record_layer.core.fdb_api import ensure_api_version
+        ensure_api_version()
 
         import fdb_record_layer as frl
         from fdb.subspace_impl import Subspace
@@ -904,7 +909,7 @@ async def main():
 
     # Run demonstrations that don't require FDB
     demonstrate_sql_queries()
-    demonstrate_production_utilities()
+    await demonstrate_production_utilities()
     demonstrate_schema_evolution()
 
     print_header("Summary")

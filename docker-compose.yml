@@ -1,6 +1,8 @@
+# Local FoundationDB for development and integration tests.
+# Override the version with: FDB_VERSION=7.4.10 docker compose up -d
 services:
   fdb:
-    image: foundationdb/foundationdb:7.3.43
+    image: foundationdb/foundationdb:${FDB_VERSION:-8.0.1}
     container_name: fdb-test
     environment:
       FDB_NETWORKING_MODE: container
@@ -13,7 +15,7 @@ services:
       - fdb-logs:/var/fdb/logs
       - ./fdb.cluster:/var/fdb/fdb.cluster
     healthcheck:
-      test: ["CMD", "fdbcli", "--exec", "status"]
+      test: ["CMD", "fdbcli", "--exec", "status minimal"]
       interval: 5s
       timeout: 10s
       retries: 10

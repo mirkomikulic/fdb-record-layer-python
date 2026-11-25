@@ -1,51 +1,47 @@
-#!/bin/bash
-# Setup script for FoundationDB test environment
+#!/usr/bin/env bash
+# Start a local single-node FoundationDB in Docker for development and tests.
+# Usage: scripts/setup_fdb.sh            (FDB 8.0.1)
+#        FDB_VERSION=7.4.10 scripts/setup_fdb.sh
+#
+# The FDB client library on your machine must have the same major.minor version
+# as the server, and the `foundationdb` Python package must match it too
+# (e.g. pip install "foundationdb~=7.4.0" for a 7.4 client).
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-
-echo "=== Setting up FoundationDB test environment ==="
-
-# Create cluster file
 CLUSTER_FILE="$PROJECT_DIR/fdb.cluster"
+export FDB_VERSION="${FDB_VERSION:-8.0.1}"
+
+echo "=== Starting FoundationDB $FDB_VERSION ==="
 echo "docker:docker@127.0.0.1:4500" > "$CLUSTER_FILE"
-echo "Created cluster file: $CLUSTER_FILE"
-
-# Start FDB container
-echo "Starting FoundationDB container..."
 cd "$PROJECT_DIR"
-docker-compose up -d
+docker compose up -d
 
-# Wait for FDB to be healthy
-echo "Waiting for FoundationDB to be ready..."
-MAX_RETRIES=30
-RETRY_COUNT=0
+fdb_status() {
+    docker exec fdb-test fdbcli --exec "status minimal" --timeout 3 2>/dev/null || true
+}
 
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if docker exec fdb-test fdbcli --exec "status" 2>/dev/null | grep -q "Healthy"; then
-        echo "FoundationDB is ready!"
-        break
-    fi
-
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    echo "Waiting... ($RETRY_COUNT/$MAX_RETRIES)"
+echo "Waiting for fdbserver to respond..."
+for _ in $(seq 1 30); do
+    fdb_status | grep -q "database" && break
     sleep 2
 done
 
-if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-    echo "Warning: FoundationDB may not be fully ready, but continuing..."
-fi
+# Creating the database is only needed once; it fails harmlessly if it exists.
+docker exec fdb-test fdbcli --exec "configure new single memory" >/dev/null 2>&1 || true
 
-# Configure database (only needed first time)
-echo "Configuring database..."
-docker exec fdb-test fdbcli --exec "configure new single memory" 2>/dev/null || true
+echo "Waiting for the database to become available..."
+for _ in $(seq 1 30); do
+    if fdb_status | grep -q "database is available"; then
+        echo "FoundationDB is ready."
+        break
+    fi
+    sleep 2
+done
 
-echo ""
-echo "=== FoundationDB is ready ==="
+echo
 echo "Cluster file: $CLUSTER_FILE"
-echo "Connection: 127.0.0.1:4500"
-echo ""
 echo "Run integration tests with:"
 echo "  FDB_CLUSTER_FILE=$CLUSTER_FILE pytest tests/integration/ -v"

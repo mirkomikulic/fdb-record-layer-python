@@ -238,7 +238,7 @@ class HealthChecker:
                 last_check=time.time(),
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(f"Health check timeout for {name}")
             return ComponentHealth(
                 name=name,
@@ -335,7 +335,7 @@ class HealthChecker:
                 last_check=time.time(),
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return ComponentHealth(
                 name=name,
                 status=HealthStatus.UNHEALTHY,
