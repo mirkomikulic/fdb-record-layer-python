@@ -3,23 +3,34 @@
 ## Quick Start
 
 ```bash
-python examples/comprehensive_example.py
+python examples/quickstart.py              # the README quick start
+python examples/comprehensive_example.py   # full e-commerce walkthrough
 ```
+
+Both need a running FoundationDB (see below). CI runs both against FoundationDB 7.4.10 and 8.0.1.
 
 ## Prerequisites
 
 ### 1. FoundationDB
 
-Install FoundationDB server and client:
+The quickest way is Docker, from the repository root:
+
+```bash
+scripts/setup_fdb.sh                     # FoundationDB 8.0.1, writes ./fdb.cluster
+export FDB_CLUSTER_FILE=$PWD/fdb.cluster
+```
+
+You also need the FoundationDB **client library** with the same major.minor version as the server, and the matching Python binding:
 
 ```bash
 # macOS (Homebrew)
 brew install foundationdb
 
-# Ubuntu/Debian
-wget https://github.com/apple/foundationdb/releases/download/7.3.27/foundationdb-clients_7.3.27-1_amd64.deb
-wget https://github.com/apple/foundationdb/releases/download/7.3.27/foundationdb-server_7.3.27-1_amd64.deb
-sudo dpkg -i foundationdb-clients_7.3.27-1_amd64.deb foundationdb-server_7.3.27-1_amd64.deb
+# Ubuntu/Debian (client only; use the server package too if you don't run Docker)
+wget https://github.com/apple/foundationdb/releases/download/8.0.1/foundationdb-clients_8.0.1-1_amd64.deb
+sudo dpkg -i foundationdb-clients_8.0.1-1_amd64.deb
+
+pip install "foundationdb~=8.0.0"        # or "foundationdb~=7.4.0" for a 7.4 client
 ```
 
 ### 2. Cluster File Configuration

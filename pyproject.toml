@@ -1,62 +1,77 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=80"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "fdb-record-layer"
-version = "0.1.0-beta.7"
+version = "0.1.0b8"
 description = "Python implementation of FoundationDB Record Layer"
 readme = "README.md"
-license = {text = "Apache-2.0"}
-requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
 authors = [
     {name = "FDB Record Layer Python Contributors"}
 ]
+maintainers = [
+    {name = "mirkomikulic"}
+]
+keywords = ["foundationdb", "fdb", "record-layer", "database", "protobuf", "asyncio"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Database",
+    "Typing :: Typed",
 ]
 dependencies = [
-    "foundationdb>=7.1.0",
-    "protobuf>=3.20.0",
-    "typing-extensions>=4.0.0",
+    "foundationdb>=7.4.0",
+    # The bundled generated code (compat/proto) requires protobuf >= 6.33.2.
+    "protobuf>=6.33.2",
+    "typing-extensions>=4.16.0",
 ]
 
 [project.optional-dependencies]
 sql = [
-    "lark>=1.0.0",
-]
-grpc = [
-    "grpcio>=1.50.0",
+    "lark>=1.3.1",
 ]
 dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "mypy>=1.0.0",
-    "ruff>=0.1.0",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "pytest-cov>=7.1.0",
+    "mypy>=2.4.1",
+    "ruff>=0.17.6",
+    "types-protobuf>=7.35.1",
+    "grpcio-tools>=1.85.4",
+    "build>=1.6.1",
+    "twine>=7.0.0",
 ]
 all = [
-    "fdb-record-layer[sql,grpc,dev]",
+    "fdb-record-layer[sql,dev]",
 ]
 
 [project.urls]
 Homepage = "https://github.com/mirkomikulic/fdb-record-layer-python"
 Documentation = "https://github.com/mirkomikulic/fdb-record-layer-python#readme"
 Repository = "https://github.com/mirkomikulic/fdb-record-layer-python"
+Issues = "https://github.com/mirkomikulic/fdb-record-layer-python/issues"
+Changelog = "https://github.com/mirkomikulic/fdb-record-layer-python/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["fdb_record_layer*"]
 
+[tool.setuptools.package-data]
+fdb_record_layer = ["py.typed", "compat/proto/*.proto"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 markers = [
     "integration: mark test as integration test requiring FDB",
@@ -65,7 +80,7 @@ markers = [
 addopts = "--ignore=tests/integration"
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 # Strict mode disabled for initial release - gradual typing improvements planned
 strict = false
 warn_return_any = false
@@ -78,15 +93,11 @@ module = ["fdb", "fdb.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["lark", "lark.*"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
 module = ["fdb_record_layer.compat.proto.*"]
 ignore_errors = true
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 exclude = [
     "examples/*_pb2.py",
@@ -97,6 +108,8 @@ exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+# UP042 (str+Enum -> StrEnum) would change str()/format() output of public enums.
+ignore = ["UP042"]
 
 [tool.ruff.lint.per-file-ignores]
 "fdb_record_layer/__init__.py" = ["E402"]

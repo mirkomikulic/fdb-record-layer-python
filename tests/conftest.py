@@ -1,8 +1,6 @@
 """Pytest configuration and shared fixtures."""
 
-import asyncio
 import sys
-from collections.abc import Generator
 from unittest.mock import MagicMock
 
 import pytest
@@ -31,14 +29,6 @@ if not _check_fdb_available():
     _mock_fdb.open = MagicMock()
     sys.modules["fdb"] = _mock_fdb
     sys.modules["fdb.subspace_impl"] = MagicMock()
-
-
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Create an event loop for async tests."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture

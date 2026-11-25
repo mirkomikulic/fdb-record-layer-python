@@ -11,13 +11,23 @@ updates:
           - "pytest*"
           - "mypy*"
           - "ruff*"
+          - "types-*"
+          - "grpcio-tools"
+          - "build"
+          - "twine"
       production:
         patterns:
           - "protobuf*"
           - "foundationdb*"
+          - "lark"
+          - "typing-extensions"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

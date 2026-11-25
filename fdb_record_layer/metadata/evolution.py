@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
+from fdb_record_layer._proto_compat import cardinality
+from fdb_record_layer._proto_compat import is_required as proto_is_required
+
 if TYPE_CHECKING:
     from fdb_record_layer.metadata.index import Index
     from fdb_record_layer.metadata.record_metadata import RecordMetaData, RecordType
@@ -332,9 +335,7 @@ class MetaDataEvolutionValidator:
         for field_name in set(new_fields.keys()) - set(old_fields.keys()):
             new_field = new_fields[field_name]
             # Check if required (proto3 doesn't have required, but proto2 does)
-            is_required = (
-                hasattr(new_field, "label") and new_field.label == 2  # LABEL_REQUIRED
-            )
+            is_required = proto_is_required(new_field)
             severity = EvolutionSeverity.ERROR if is_required else EvolutionSeverity.INFO
             issues.append(
                 EvolutionIssue(
@@ -365,18 +366,19 @@ class MetaDataEvolutionValidator:
                 )
 
             # Check label change (optional/required/repeated)
-            if hasattr(old_field, "label") and hasattr(new_field, "label"):
-                if old_field.label != new_field.label:
-                    issues.append(
-                        EvolutionIssue(
-                            change_type=EvolutionChange.FIELD_LABEL_CHANGED,
-                            severity=EvolutionSeverity.WARNING,
-                            message=f"Field '{field_name}' label changed in '{name}'",
-                            old_value=old_field.label,
-                            new_value=new_field.label,
-                            record_type=name,
-                        )
+            old_label = cardinality(old_field)
+            new_label = cardinality(new_field)
+            if old_label != new_label:
+                issues.append(
+                    EvolutionIssue(
+                        change_type=EvolutionChange.FIELD_LABEL_CHANGED,
+                        severity=EvolutionSeverity.WARNING,
+                        message=f"Field '{field_name}' label changed in '{name}'",
+                        old_value=old_label,
+                        new_value=new_label,
+                        record_type=name,
                     )
+                )
 
         return issues
 

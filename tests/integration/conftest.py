@@ -41,7 +41,9 @@ def fdb_database(fdb_cluster_file):
     """Create an FDB database connection."""
     import fdb
 
-    fdb.api_version(740)
+    from fdb_record_layer.core.fdb_api import ensure_api_version
+
+    ensure_api_version()
     db = fdb.open(fdb_cluster_file)
 
     yield db

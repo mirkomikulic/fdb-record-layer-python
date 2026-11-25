@@ -6,6 +6,7 @@ configurable log levels for production debugging.
 
 from __future__ import annotations
 
+import inspect
 import logging
 import time
 from collections.abc import Callable
@@ -258,9 +259,7 @@ def log_operation(
                 logger.warning(f"Failed {operation}", extra=extra)
                 raise
 
-        import asyncio
-
-        if asyncio.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
             return cast(F, async_wrapper)
         return cast(F, sync_wrapper)
 

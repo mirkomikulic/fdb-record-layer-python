@@ -7,6 +7,7 @@ when the database is unavailable or under stress.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 import time
 from collections.abc import Callable
@@ -242,7 +243,7 @@ class CircuitBreaker:
             CircuitOpenError: If the circuit is open.
         """
         async with self:
-            if asyncio.iscoroutinefunction(func):
+            if inspect.iscoroutinefunction(func):
                 result: T = await func(*args, **kwargs)
             else:
                 result = func(*args, **kwargs)
